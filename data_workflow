@@ -1,0 +1,32 @@
+RealResearch proteomics collaboration data processing workflow
+
+FASTA databases
+1. Downloaded SwissProt+Tremble human and murine
+2. FASTA to tabular in Galaxy
+3. Murine and human protein databases were merged and filtered for non-redundant sequences
+4. fbs and common contams were added and filtered for non-redundant sequences
+5. iRTs sequence was added
+6. Tabular to FASTA and width conversion - Galaxy
+
+Raw files
+1. DDA library creation from DDA files - Fragpipe
+2. Umpire library creation from DIA files - Fragpipe
+3. Conversion of DIA to DIANN format - mzml dia
+4. Library creation de novo from deep-learning networks - DIANN
+5. Alingment of libraries - Artur's python script
+6. Quantitation in DIANN to create one merged lib creation
+7. Library filtered to only human precursor peptides
+8. Quantitation in DIANN using automatic mass shift tolerance
+9. Quantitation in DIANN using defined mass shift tolerances
+
+TSV matrix - MSqRob processing
+1.
+
+Quantitation matrix - R
+1. Tidying up
+2. Normalization methods performance – proBacth/LIMMA
+3. Quantile normalization - proBATCH
+4. Differential expression - LIMMA
+5. GO and KEGG GSEA - clusterProfiler
+6. ANOVA filtering and its effect on clustering and GSEA
+

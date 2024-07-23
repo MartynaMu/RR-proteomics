@@ -15,13 +15,13 @@ row.names(design) <- colnames(mat)
 
 ##Limma fit and matrix contrasts-------------------------------------------------
 fit <- lmFit(mat, design)
-cont.matrix <- makeContrasts(x2D_x3Dyoung = x2D - x3D_young, #1
-                             x2D_x3Dold = x2D - x3D_old, #2
-                             x2D_PDX2D = x2D - PDX_2D, #3
-                             x3Dyoung_x3Dold=x3D_young - x3D_old, #4
-                             x3Dold_PDX3D = x3D_old - PDX_3D, #5
-                             x3Dyoung_xPDX3D = x3D_young - PDX_3D, #6
-                             levels=design)
+cont.matrix <- makeContrasts(x2D_x3Dyoung = x3D_young - x2D, #1
+                             x2D_x3Dold = x3D_old - x2D, #2
+                             x2D_PDX2D = PDX_2D - x2D, #3
+                             x3Dyoung_x3Dold = x3D_old - x3D_young, #4
+                             x3Dold_PDX3D = PDX_3D - x3D_old, #5
+                             x3Dyoung_xPDX3D = PDX_3D - x3D_young, #6
+                             levels = design)
 fit2 <- contrasts.fit(fit, cont.matrix)
 
 fit_bayes <- eBayes(fit2) 
@@ -29,7 +29,7 @@ fit_bayes <- eBayes(fit2)
 ##DE genes--------------------------------------------------------------------
 #Coef = sth shows one chosen comparison, if all comparisons need to be done, eg. 3, anova will be done
 #here 3d old vs young
-deps <- topTable(fit_bayes, coef = 2, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(qnorm))
+deps <- topTable(fit_bayes, coef = 1, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(qnorm))
 # filter on p.adj value
 #deps <- filter(deps, adj.P.Val <= 0.05)
 # find DEPs sign between comparisons
@@ -87,5 +87,5 @@ vennDiagram(result,include = "down",show.include = TRUE)
 
 ##Volcanos-------------------------------------------------------------------------
 #quick volcano plot
-volcanoplot(fit_bayes_g, coef=2, highlight = 10, names = rownames(mat))
-abline(h = 1.2, v = c(-1.5,1.5), lty = 2)
+volcanoplot(fit_bayes, coef=2, highlight = 10, names = rownames(mat),style = "B-statistic")
+abline(h = 1.2, v = c(-1.3,1.3), lty = 2)

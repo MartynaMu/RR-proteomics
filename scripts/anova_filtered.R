@@ -30,7 +30,14 @@ biplot(a,
        title = "ANOVA filtered",
        encircle = TRUE,
        hline = 0,
-       vline = 0)
+       vline = 0,
+       colLegendTitle = "Condition",
+       legendPosition = "right",
+       legendLabSize = 16)
 dev.off()
 
 screeplot(a)
+
+# plot just legend from pca
+library(ggpubr)
+get_legend(temp) %>% as_ggplot()

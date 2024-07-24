@@ -1,31 +1,21 @@
+# CFPAC cell line experiment only
 #Libs----------------------------------------------------------------------------
 library("tidyverse")
 
-# Load----------------------------------------------------------------------------
-msqrob <- read.delim("data/msqrob_culture_vs_xeno.tsv")
-
-#FC values
-msqrob_diff <- msqrob[,19:26]
-#Intensity values
-msqrob <- msqrob[1:20]
-
 # Tidying up--------------------------------------------------------------------
 #drop nas
-msqrob <- drop_na(msqrob)
+mat <- as.matrix(df_wide)
+##quantile norm=========================
+qnorm <- limma::normalizeQuantiles(mat)
 
 # Tidy up gene groups - getting rid of mouse part and setting as rownames
-msqrob$Gene <- str_replace(msqrob$Gene, pattern = "_HUMAN;.+|_HUMAN", replacement = "")
-msqrob <- column_to_rownames(msqrob, "Gene")
+df_wide$Gene <- str_replace_all(df_wide$Gene, pattern = "_HUMAN", replacement = "")
+df_wide <- column_to_rownames(df_wide, "Gene")
 
 # Correlation plots---------------------------------------------------------------
 library(corrplot)
 
-# AFTER MAXLFQ BEFORE MSQROB
-corr <- cor(log2(maxlfq), use="complete.obs")
-corrplot(corr, method = "color", hclust.method = "ward.D2", is.corr = FALSE, col = COL1("OrRd"))
-
-# AFTER MSQROB
-corr <- cor(msqrob[1:18])
+corr <- cor(df_wide[1:18])
 corrplot(corr, method = "color", hclust.method = "ward.D2", is.corr = FALSE, col = COL1("OrRd"))
 
 # AFTER QNORM
@@ -35,14 +25,13 @@ corrplot(corr, method = "color", hclust.method = "complete", is.corr = FALSE, co
 # Global heatmap-----------------------------------------------------------------------
 annot_col <- data.frame(
   Condition.L1 = as.factor(
-    c(rep(c("2D", "3D.young", "3D.old"), each = 4),
-      rep(c("PDX.2D", "PDX.3D"), each = 3))),
+    c(rep(c("2D", "3D.old", "3D.young", "PDX.2D", "PDX.3D"), each = 3))),
   Condition.L2 = as.factor(
-    c(rep("2D", 4), 
-      rep("3D", 8), 
+    c(rep("2D", 3), 
+      rep("3D", 6), 
       rep("PDX", 6))))
 
-row.names(annot_col) <- colnames(msqrob)[1:18]
+row.names(annot_col) <- colnames(df_wide)
 
 library(RColorBrewer)
 annot_colors <- list(Condition.L1 = rev(brewer.pal(5, "Paired")),
@@ -51,19 +40,19 @@ annot_colors <- list(Condition.L1 = rev(brewer.pal(5, "Paired")),
 names(annot_colors$Condition.L1) <- levels(annot_col$Condition.L1)
 names(annot_colors$Condition.L2) <- levels(annot_col$Condition.L2)
 
-pheatmap::pheatmap(msqrob[1:18],
-           scale = "row",
-           show_rownames = FALSE,
-           clustering_distance_cols = "euclidean",
-           clustering_distance_rows = "correlation",
-           annotation_col = annot_col,
-           annotation_colors = annot_colors,
-           main = "Global heatmap")
+pheatmap::pheatmap(df_wide,
+                   scale = "row",
+                   show_rownames = FALSE,
+                   clustering_distance_cols = "euclidean",
+                   clustering_distance_rows = "correlation",
+                   annotation_col = annot_col,
+                   annotation_colors = annot_colors,
+                   main = "Global heatmap")
 
 # PCA----------------------------------------------------------------------------
 library(PCAtools)
 #column to rownames for pca function
-mat <- as.matrix(msqrob[1:18])
+
 #pca
 p <- pca(mat, metadata = annot_col, scale = TRUE)
 
@@ -83,28 +72,9 @@ dev.off()
 
 screeplot(p)
 
-#Norm methods-------------------------------------------------------------------
-mat <- as.matrix(mat)
-##median norm=========================
-temp <- normalize_data_dm(mat, normalize_func ="medianCentering")
-boxplot(temp)
+#Normalization-------------------------------------------------------------------
 ##quantile norm=========================
 qnorm <- limma::normalizeQuantiles(mat)
-#rownames(qnorm) <- rownames(msqrob)
-#qnorm$Gene <- rownames(msqrob)
-##PARK7_HUMAN norm============
-park7_mean <- mean(mat["PARK7_HUMAN",])
-vec <- mat["PARK7_HUMAN",] - park7_mean
-temp <- mat - vec
-##scale normalization=============
-temp <- scale(mat)
-boxplot(temp)
-##VSN norm=====================
-temp <- limma::normalizeVSN(mat)
-boxplot(temp)
-##Loess norm=====================
-temp <- limma::normalizeCyclicLoess(mat)
-boxplot(temp)
 
 ##Assess PCA grouping---------------------------------------------------------
 #pca
@@ -129,26 +99,25 @@ screeplot(n)
 # Corr after norm--------------------------------------------------------------
 # filter(msqrob, grepl("FN1", Gene))
 qnorm <- as.data.frame(qnorm)
-qnorm$Gene <- rownames(msqrob)
+qnorm$Gene <- rownames(df_wide)
 rownames(qnorm) <- qnorm$Gene
 
-pheatmap::pheatmap(qnorm[1:18],
+pheatmap::pheatmap(qnorm,
                    scale = "row",
                    show_rownames = FALSE,
-                   clustering_distance_cols = "correlation",
+                   clustering_distance_cols = "euclidean",
                    clustering_distance_rows = "correlation",
                    annotation_col = annot_col,
-                   annotation_colors = annot_colors,
-                   main = "Cell-cell signaling genes")
+                   annotation_colors = annot_colors)
 
 # GO classification------------------------------------------------------------
 library(clusterProfiler)
 library(org.Hs.eg.db)
 go_class <- groupGO(qnorm$Gene, 
-                 OrgDb = org.Hs.eg.db,
-                 ont = "BP",
-                 level = 5, 
-                 keyType = "SYMBOL")
+                    OrgDb = org.Hs.eg.db,
+                    ont = "BP",
+                    level = 5, 
+                    keyType = "SYMBOL")
 go_class <- go_class@result
 
 term = "cellular response to hypoxia"

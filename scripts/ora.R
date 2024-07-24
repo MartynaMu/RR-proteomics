@@ -37,6 +37,8 @@ enrich_go <- function(fit, coefs, GO="BP|CC|MF", simplify = TRUE) {
       names(geneList) <- as.character(deps[,1]) #gene symbols
       geneList <- sort(geneList, decreasing = TRUE) #sort ranks
       
+      comp <- str_split_1(names(coefs[i]), pattern = "v") #prepare exp group names for plot titles
+      
       # define keytype for genes
       keyType = "SYMBOL"
       
@@ -64,7 +66,8 @@ enrich_go <- function(fit, coefs, GO="BP|CC|MF", simplify = TRUE) {
       #Visualize upreg
       if(min(go_enr_results$p.adjust) <= 0.05) {
         go_enr_sim <- simplify(go_enr)
-        barplot(go_enr_sim, showCategory = 30, label_format = 60)
+        barplot(go_enr_sim, showCategory = 30, label_format = 60)+
+          labs(title = sprintf("Upregulated genes in %s",comp[2]))
         ggsave(filename = paste0(filename_fig,"_upreg.png"),
                device = "png",
                path = path_figs,
@@ -93,7 +96,8 @@ enrich_go <- function(fit, coefs, GO="BP|CC|MF", simplify = TRUE) {
       #Visualize downreg
       if(min(go_enr_results$p.adjust) <= 0.05) {
         go_enr_sim <- simplify(go_enr)
-        barplot(go_enr_sim, showCategory = 30, label_format = 60)
+        barplot(go_enr_sim, showCategory = 30, label_format = 60)+
+          labs(title = sprintf("Downregulated genes in %s",comp[2]))
         ggsave(filename = paste0(filename_fig,"_downreg.png"),
                device = "png",
                path = path_figs,

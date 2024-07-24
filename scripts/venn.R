@@ -1,5 +1,7 @@
+# Libraries---------------------------------------------------------------------
 library(eulerr)
-
+library(tidyverse)
+library(limma)
 
 coefs <- seq.int(1,6,1)
 names(coefs) <- c("2Dv3Dy", "2Dv3Do", "2DvPDX2D", "3Dyv3Do", "3DovPDX3D", "3DyvPDX3D")
@@ -61,7 +63,8 @@ filtr_deps <- unlist(deps_list) |> unique()
 temp <- pheatmap::pheatmap(qnorm[qnorm$Gene %in% filtr_deps,1:18],
                    scale = "row",
                    show_rownames = FALSE,
-                   cutree_rows = 5,annotation_row = clusters,
+                   cutree_rows = 5,
+                   annotation_row = clusters,
                    clustering_distance_cols = "euclidean",
                    clustering_distance_rows = "correlation",
                    annotation_col = annot_col,

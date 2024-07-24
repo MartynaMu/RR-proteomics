@@ -42,6 +42,8 @@ for (i in coefs) {
               sep = "\t",
               row.names = FALSE)
   
+  comp <- str_split_1(names(coefs[i]), pattern = "v")
+  
   theme_set(theme_light())
   v <- ggplot(volc_data,
               aes(x = logFC,
@@ -52,7 +54,7 @@ for (i in coefs) {
     scale_color_manual(values = c("Down-regulated" = "blue", "Not significant" = "gray", "Up-regulated" = "red"))+
     labs(title = names(coefs[i]),
          y = "-log10 adj. p-value",
-         x = "log2 fold change")+
+         x = sprintf("log2 fold change (%s/%s)", comp[2], comp[1]))+
     geom_hline(yintercept = 1.3, lty=2)+
     geom_vline(xintercept = c(-1.3,1.3), lty=2)+
     scale_x_continuous(limits = c(-5.5,5.5))+

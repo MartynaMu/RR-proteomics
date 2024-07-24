@@ -83,9 +83,9 @@ upreg %>%
     theme(axis.text = element_text(size=15))
 
 ## Explore expr of terms of interest ------------------------------------------
-term = "negative regulation of cell cycle process"
+term = "response to decreased oxygen levels"
 #filtr <- str_split_1(gsea_results$core_enrichment[gsea_results$Description == term], pattern = "/")
-filtr <- str_split_1("CDC20/BIRC5/GTSE1/SPC24/SPC25/CCNB1/CDK1/EZH2/CENPF/PPP1R10/NDC80/CDK2/SYF2/BAZ1B/PRPF19/BUB3/NAA10/NPM1/INTS7/H2AX/MAP3K20/RBM14/NOP53/MDC1/TOM1L2/GIGYF2/CDC5L/IK/METTL13/INTS3/WAPL/PSMG2/CHFR/MSH2/BUB1/MAD1L1/CDC73/NUBP1/CDK5RAP2/WDR76/ATRX/TTK/TTI1/ZNF207/ZNF830/NSUN2/TP53/KANK2/TRIAP1
+filtr <- str_split_1("ANGPTL4/ERO1A/AK4/NDRG1/STC2/SLC2A1/NOL3/FAM162A/PLOD2/PGK1/PLOD1/SDHD/SOD2/HMOX1/EGLN1/PARP2/HP1BP3/XRCC1/PLAU/ADA/CAT/LOXL2/LONP1/P4HB/HSPG2/MMP14/HSP90B1
 ", pattern = "/")
 
 pheatmap::pheatmap(qnorm[qnorm$Gene %in% filtr,1:18],

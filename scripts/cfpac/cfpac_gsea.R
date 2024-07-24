@@ -44,7 +44,7 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs, plot = TRUE) {
       gsea <- gseGO(geneList = geneList,
                     OrgDb = org.Hs.eg.db,
                     ont = GO,
-                    minGSSize = 1,
+                    minGSSize = 15,
                     maxGSSize = 100,
                     pvalueCutoff = 0.05,
                     verbose = TRUE,
@@ -119,7 +119,7 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs, plot = TRUE) {
   }
 }
 
-compute_gsea(fit = fit_bayes, path = "figures/panc1/int_mat_fc/", GO = "MF", coefs = coefs, plot = TRUE)
+compute_gsea(fit = fit_bayes, path = "figures/cfpac/int_mat_fc/", GO = "BP", coefs = coefs, plot = TRUE)
 
 ## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, path, coefs) {
@@ -180,5 +180,5 @@ compute_keggsea <- function(fit, path, coefs) {
   }
 }
 
-compute_keggsea(fit = fit_bayes, path = "figures/panc1/int_mat_fc/", coefs = coefs)
+compute_keggsea(fit = fit_bayes, path = "figures/cfpac/int_mat_fc/", coefs = coefs)
 

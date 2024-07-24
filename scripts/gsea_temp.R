@@ -17,11 +17,12 @@ coefs <- seq.int(1,6,1)
 names(coefs) <- c("2dv3dy", "2dv3do", "2dvPDX2d", "3dyv3do", "3dovPDX3d", "3dyvPDX3d")
 
 #Automatized--------------------------------------------------------------------
-compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, simplify = TRUE) {
+##GO GSEA-----------------------------------------------------------------------
+compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, plot = TRUE) {
   ## Case 1. Simplified table results + figures---------
-  if (simplify == TRUE) {
-    path_figs <- paste0("figures/gsego_results/gsego_", GO, "_results/unfiltered/")
-    path_data <- paste0("data/gsego_results/gsego_", GO, "_results/unfiltered/simplified/")
+  if (plot == TRUE) {
+    path_figs <- paste0("figures/gsego_results/gsego_", GO, "_results/")
+    path_data <- paste0("data/gsego_results/gsego_", GO, "_results/")
       
     if (dir.exists(path_figs) == FALSE) {
       dir.create(path_figs,showWarnings = TRUE,recursive = TRUE)
@@ -41,6 +42,8 @@ compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, simplify = TRUE) {
       names(geneList) <- as.character(deps[,1]) #gene symbols
       geneList <- sort(geneList, decreasing = TRUE) #sort ranks
       
+      comp <- str_split_1(names(coefs[i]), pattern = "v") #prepare exp group names for plot titles
+      
       # define keytype for genes
       keyType = "SYMBOL"
       
@@ -56,19 +59,21 @@ compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, simplify = TRUE) {
                     keyType = keyType)
     
       
-      # remove redundant GO terms via GOSemSim methods
-      simp <- clusterProfiler::simplify(gsea)
-      simp_results <- simp@result
+      # write down unsimplified results
+      gsea_results <- gsea@result
       write.table(file = paste0(path_data, filename_data), 
-                  x = simp_results, 
+                  x = gsea_results, 
                   quote = FALSE, 
                   sep = "\t",
                   row.names = FALSE)
       
+      # remove redundant GO terms via GOSemSim methods for plotting
+      simp <- clusterProfiler::simplify(gsea)
+      
       # Visualize
       ridgeplot(simp, label_format = 60)+
         geom_vline(xintercept = 0, lty = 2)+
-        labs(x = "log2FC")
+        labs(x = sprintf("log2 FC (%s/%s)", comp[2], comp[1]))
       
       ggsave(filename = filename_fig,
              device = "png",
@@ -78,9 +83,9 @@ compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, simplify = TRUE) {
              units = "px",
              dpi = 100)
     }
-  } else if (simplify == FALSE) { #for not simplified tables only
+  } else if (plot == FALSE) { #for tables only
     ## Case 2. NOT simplified table results ONLY---------
-      path_data <- paste0("data/gsego_results/gsego_", GO, "_results/unfiltered/notsimplified/")
+      path_data <- paste0("data/gsego_results/gsego_", GO, "_results/")
       
       if (dir.exists(path_data) == FALSE) {
         dir.create(path_data,showWarnings = TRUE,recursive = TRUE)
@@ -120,13 +125,13 @@ compute_gsea <- function(fit, GO = c("BP|CC|MF"), coefs, simplify = TRUE) {
   }
 }
 
-compute_gsea(fit = fit_bayes, GO = "CC", coefs = coefs, simplify = FALSE)
+compute_gsea(fit = fit_bayes, GO = "MF", coefs = coefs, plot = TRUE)
 
 
-
+## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, coefs) {
-  path_figs <- paste0("figures/gsekegg_results/unfiltered/")
-  path_data <- paste0("data/gsekegg_results/unfiltered/")
+  path_figs <- paste0("figures/gsekegg_results/")
+  path_data <- paste0("data/gsekegg_results/")
   if (dir.exists(path_figs) == FALSE) {
     dir.create(path_figs,showWarnings = TRUE,recursive = TRUE)
   }
@@ -145,6 +150,8 @@ compute_keggsea <- function(fit, coefs) {
     geneList <- filter(deps, ID %in% entrezid$SYMBOL)[,2] #fc
     names(geneList) <- as.character(entrezid$ENTREZID) #gene symbols
     geneList <- sort(geneList, decreasing = TRUE) #sort ranks
+    
+    comp <- str_split_1(names(coefs[i]), pattern = "v") #prepare exp group names for plot titles
     
     kegg <- gseKEGG(geneList = geneList,                
                     organism = "hsa", 
@@ -166,7 +173,7 @@ compute_keggsea <- function(fit, coefs) {
     # Visualize
     ridgeplot(kegg, label_format = 60)+
       geom_vline(xintercept = 0, lty = 2)+
-      labs(x = "log2FC")
+      labs(x = sprintf("log2 FC (%s/%s)", comp[2], comp[1]))
     
     ggsave(filename = filename_fig,
            device = "png",

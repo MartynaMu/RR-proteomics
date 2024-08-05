@@ -3,7 +3,7 @@ cell.line <- c("miapaca", "panc1", "cfpac")
 gene_occ <- data.frame(matrix(ncol = 6))
 for (l in cell.line) {
   library(tidyverse)
-  fc_msqrob <- read.delim(sprintf("data/%s/a_Hurdle_Msqrob.tsv",cell.line))
+  fc_msqrob <- read.delim(sprintf("data/%s/a_Hurdle_Msqrob.tsv",l))
   # fc_msqrob <- read.delim("data/panc1/a_msqrob_result_Ridge_Aggregate.tsv")
   
   # Preprocessing-------------------------------------------------------------------
@@ -132,11 +132,12 @@ for (l in cell.line) {
 }
 
 test <- full_join(gene_occ.cfpac.2dv3dy, gene_occ.miapaca.2dv3dy, by="Gene") |> full_join(gene_occ.panc1.2dv3dy, by="Gene")
-  
-test |> pivot_longer(2:4, names_to = "CellLine", values_to = "TermCount") |> 
-  filter(TermCount > 7) %>%
-  ggplot(aes(x=Gene,y=TermCount))+
-  geom_col()
+
+test1 <- test %>% mutate_at(vars(TermCount.x:TermCount), rank, na.last = "keep")
+
+test1 |> pivot_longer(2:4, names_to = "CellLine", values_to = "TermCount") %>%
+  ggplot(aes(x=Gene,y=TermCount, color = CellLine, group=CellLine))+
+  geom_line()
 
 ## Reactome ------------------------------------------------------------------
 

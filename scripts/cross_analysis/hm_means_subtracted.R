@@ -4,8 +4,6 @@ df <- df[1:49]
 
 df$Genes <- str_replace_all(df$Genes, "_HUMAN", replacement = "")
 df <- column_to_rownames(df, var = "Genes")
-df <- limma::normalizeQuantiles(df)
-df <- rownames_to_column(df, var = "Genes")
 
 panc.ind <- colnames(df) %>% str_which(pattern="PANC")
 miapaca.ind <- colnames(df) %>% str_which(pattern="MIAPACA")
@@ -38,7 +36,7 @@ annot_col <- data.frame(
     c(panc1.l2, miapaca.l2, cfpac.l2)),
   Condition.L3 = as.factor(celllines))
 
-row.names(annot_col) <- colnames(test[2:49])
+row.names(annot_col) <- colnames(test[1:48])
 
 library(RColorBrewer)
 annot_colors <- list(Condition.L1 = rev(brewer.pal(5, "Paired")),
@@ -50,11 +48,14 @@ names(annot_colors$Condition.L2) <- levels(annot_col$Condition.L2)
 names(annot_colors$Condition.L3) <- levels(annot_col$Condition.L3)
 
 test[test==0] <- NA
-test <- test[2:49] %>% 
+test <- test[1:48] %>% 
   drop_na()
 
-pheatmap::pheatmap(test, scale = "row",
+# quantile norm after cell line mean norm is the appropriate sequence
+qnorm <- limma::normalizeQuantiles(as.matrix(test))
+
+pheatmap::pheatmap(qnorm, scale = "none",
                    annotation_col = annot_col,
                    annotation_colors = annot_colors,
-                   main = "Global heatmap qnorm, cell line means subtracted")
+                   main = "Global heatmap, cell line means subtracted then qnorm")
 

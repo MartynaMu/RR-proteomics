@@ -1,0 +1,91 @@
+# Scatter plot of mean group intensities in all cell lines
+library(tidyverse)
+library(limma)
+library(ggpubr)
+
+cell.line <- c("miapaca", "panc1", "cfpac")
+
+means <- data.frame(matrix(ncol=3))
+colnames(means) <- c("Gene", "Group", "Mean")
+
+for (l in cell.line) {
+  library(tidyverse)
+  fc_msqrob <- read.delim(sprintf("data/%s/a_Hurdle_Msqrob.tsv",l))
+  
+  # Preprocessing-------------------------------------------------------------------
+  #tidy Gene symbols
+  fc_msqrob$Genes <- str_replace_all(fc_msqrob$Genes, "_HUMAN", "")
+  colnames(fc_msqrob) <- str_replace_all(colnames(fc_msqrob), "norm_", "")
+  
+  prot_info <- fc_msqrob %>% dplyr::select(matches("Gene|Protein|Peptide")) # protein info
+  int_mat <- fc_msqrob %>% dplyr::select(!matches("FC|qval|_OR|_fisher|_pval")) # intensity matrix
+  colnames(int_mat)
+  
+  #first check filtered on normal qval, then fisher_qval
+  fc_msqrob <- fc_msqrob %>% dplyr::select(matches("FC|(?<!fisher)_qval|Genes", perl = TRUE)) 
+  #fc_msqrob <- fc_msqrob %>% dplyr::select(matches("FC|(?<=fisher)_qval|Genes", perl = TRUE)) 
+  fc_msqrob <- column_to_rownames(fc_msqrob, "Genes")
+  colnames(fc_msqrob)
+  
+  fc_msqrob <- fc_msqrob[,order(colnames(fc_msqrob))]
+  colnames(fc_msqrob)
+  
+  # get rid of 0
+  int_mat[int_mat == 0] <- NA
+  
+  # normalize quantiles
+  int_mat <- column_to_rownames(int_mat, "Genes")
+  int_mat <- int_mat %>% dplyr::select(!matches("Protein|Peptide"))
+  colnames(int_mat)
+  qnorm <- limma::normalizeQuantiles(drop_na(int_mat))
+  
+  # DE limma --------------------------------------------------------------------
+  # limma instead of hurdle/msqrob ttest
+  
+  library(tidyverse)
+  library(limma)
+  
+  # In-depth comparisons-----------------------------------------------------------
+  ##Design table creation-------------------------------------------------------------
+  #where first digit in rep represents the column it will be filled with, second is nr of replicates
+  
+  mat <- as.matrix(qnorm[1:ncol(qnorm)])
+  V1 <- str_count(colnames(mat), pattern = "2D(?!_XENO)") %>% sum()
+  V2 <- str_count(colnames(mat), pattern = "3D_YOUNG") %>% sum()
+  V3 <- str_count(colnames(mat), pattern = "3D_OLD") %>% sum()
+  V4 <- str_count(colnames(mat), pattern = "2D_XENO") %>% sum()
+  V5 <- str_count(colnames(mat), pattern = "3D_XENO") %>% sum()
+  
+  design <- model.matrix(~ 0+factor(c(rep(1,V1),
+                                      rep(2,V2),
+                                      rep(3,V3),
+                                      rep(4,V4),
+                                      rep(5,V5))))
+  colnames(design) <- c("x2D", "x3D_young", "x3D_old", "PDX_2D", "PDX_3D")
+  row.names(design) <- colnames(mat)
+  
+  ##Limma fit and matrix contrasts-------------------------------------------------
+  fit <- lmFit(mat, design)
+
+  # temp <- fit$coefficients %>% 
+  #   as.data.frame() %>% 
+  #   rownames_to_column(var = "Gene") %>% 
+  #   pivot_longer(2:6, names_to = "Group", values_to = "Mean") %>%
+  #   add_column(Cell.line = l)
+  # means <- bind_rows(means, temp)
+  
+  temp <- fit$coefficients %>%
+    as.data.frame() %>%
+    rownames_to_column(var="Gene")
+  
+  assign(paste0("means.",l), temp)
+}
+
+means <- full_join(means.cfpac, means.panc1, by="Gene", suffix = c(".cfpac", ".panc1")) %>% full_join(means.miapaca, by="Gene")
+colnames(means)[12:16] <- paste0(colnames(means)[12:16],".miapaca")
+
+means %>% 
+  ggplot(aes(x=x2D.cfpac, y=x2D.panc1))+
+  geom_point(alpha = .1)+
+  stat_cor(method = "pearson")
+

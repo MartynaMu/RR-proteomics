@@ -1,21 +1,23 @@
 library(tidyverse)
 # Cross analysis of deps in all cell lines
-coefs <- seq.int(1,6,1)
-names(coefs) <- c("2Dv3Dy", "2Dv3Do", "2DvPDX2D", "3Dyv3Do", "3DovPDX3D", "3DyvPDX3D")
+coefs <- seq.int(1,18,1)
+names(coefs) <- colnames(fit_bayes$contrasts)
 
-cell.line <- c("panc1", "cfpac", "miapaca")
+cell.line <- c("PANC", "MIAPACA", "CFPAC")
 
-term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
+term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
   # DF Creation------------------------------------------------------------------
   # Read the deps files, merge per cell line, add a column with a comparison
-  if (ontology != "KEGG") {
+  if (ontology %in% c("BP", "CC", "MF")) {
     for (l in cell.line) {
-      files <- list.files(paste0("figures/", l, "/int_mat_fc/gsego_results/gsego_", ontology, "_results/"), 
+      files <- list.files(paste0("figures/allruns/final_quant/gsego_results/gsego_", ontology, "_results/"), 
                           full.names = TRUE,
-                          pattern = ".tsv")
-      temp <- lapply(files, read_tsv, show_col_types=FALSE)
-      names(temp) <- str_sort(names(coefs))
-      temp <- mapply(c, temp, str_sort(names(coefs)), SIMPLIFY = FALSE)
+                          pattern = "unsimplified")
+      
+      temp <- files[str_which(files, pattern = l)] |> lapply(read_tsv)
+      curr.coef.names <- names(coefs)[str_which(names(coefs), pattern = l)]
+      names(temp) <- str_sort(curr.coef.names)
+      temp <- mapply(c, temp, str_sort(curr.coef.names), SIMPLIFY = FALSE)
       temp <- data.table::rbindlist(temp)
       
       colnames(temp)[ncol(temp)] <- "Comparison"
@@ -23,29 +25,46 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
     }
   } else if (ontology == "KEGG") {
     for (l in cell.line) {
-      files <- list.files(paste0("figures/", l, "/int_mat_fc/gsekegg_results/"), 
+      files <- list.files(paste0("figures/allruns/final_quant/gsekegg_results/"), 
+                          full.names = TRUE,
+                          pattern = "unsimplified")
+      
+      temp <- files[str_which(files, pattern = l)] |> lapply(read_tsv)
+      curr.coef.names <- names(coefs)[str_which(names(coefs), pattern = l)]
+      names(temp) <- str_sort(curr.coef.names)
+      temp <- mapply(c, temp, str_sort(curr.coef.names), SIMPLIFY = FALSE)
+      temp <- data.table::rbindlist(temp)
+      
+      colnames(temp)[ncol(temp)] <- "Comparison"
+      assign(paste("deps",l, sep = "."), temp)
+    } 
+  } else if (ontology == "WP") {
+    for (l in cell.line) {
+      files <- list.files(paste0("figures/allruns/final_quant/gseWP_results/"), 
                           full.names = TRUE,
                           pattern = ".tsv")
-      temp <- lapply(files, read_tsv, show_col_types=FALSE)
-      names(temp) <- str_sort(names(coefs))
-      temp <- mapply(c, temp, str_sort(names(coefs)), SIMPLIFY = FALSE)
+      
+      temp <- files[str_which(files, pattern = l)] |> lapply(read_tsv)
+      curr.coef.names <- names(coefs)[str_which(names(coefs), pattern = l)]
+      names(temp) <- str_sort(curr.coef.names)
+      temp <- mapply(c, temp, str_sort(curr.coef.names), SIMPLIFY = FALSE)
+      temp <- data.table::rbindlist(temp)
       
       colnames(temp)[ncol(temp)] <- "Comparison"
       assign(paste("deps",l, sep = "."), temp)
     }
   }
-  
-  #create a list of variable names to access them later
-  deps <- str_c("deps", cell.line, sep = ".")
-  full.overlap <- c()
-  
   # Upregulated ------------------------------------------------------------------
   ## Create a list of elements to overlap with ------------------------------------
+  full.overlap <- c()
+  
   upreg <- c()
-  for (i in coefs) {
-    for (e in deps) {
-      temp <- get(e) %>% filter(NES > 0, Comparison == eval(names(coefs[i]))) %>% dplyr::select(ID)
-      colnames(temp) <- paste(e,names(coefs[i]),sep=".")
+  for (l in cell.line) {
+    deps <- paste0("deps.", l)
+    curr.coefs <- coefs[str_which(names(coefs), pattern = l)]
+    for (i in curr.coefs) {
+      temp <- get(deps) %>% filter(NES > 0, Comparison == eval(names(curr.coefs[curr.coefs==i]))) %>% dplyr::select(ID)
+      colnames(temp) <- paste("deps", l ,names(curr.coefs[curr.coefs==i]),sep=".")
       upreg <- c(upreg, temp)
     }
   }
@@ -54,14 +73,18 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
   
   ## Overlap ----------------------------------------------------------------------
   library(eulerr)
-  for (i in coefs) {
-    comb <- upreg[grepl(names(coefs[i]), names(upreg))]
-    temp <- plot(euler(comb), quantities = TRUE, labels = c("CFPAC", "MiaPaca", "PANC1"), main = names(coefs[i]),
+  curr.comp <- str_replace_all(names(coefs), pattern = "^[:alpha:]+.", replacement = "") %>% unique()
+  for (i in curr.comp) {
+    comb <- upreg[grepl(i, names(upreg))]
+    temp <- plot(euler(comb), 
+                 quantities = TRUE, 
+                 labels = c("PANC", "MIAPACA", "CFPAC"), 
+                 main = i,
                  fills = c("white", "lightgrey", "#C4E311"))
     ggsave(
-      filename = paste0("upreg.terms.", names(coefs[i]), ".png"),
+      filename = paste0("upreg.terms.", i, ".png"),
       plot = temp,
-      path = paste0("figures/cross-analysis/overlap/",ontology),
+      path = paste0("figures/allruns/final_quant/overlap/terms",ontology),
       device = "png",
       units = "px", 
       dpi = 100,
@@ -73,10 +96,12 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
   # Down-regulated ------------------------------------------------------------------
   ## Create a list of elements to overlap with ------------------------------------
   downreg <- c()
-  for (i in coefs) {
-    for (e in deps) {
-      temp <- get(e) %>% filter(NES < 0, Comparison == eval(names(coefs[i]))) %>% dplyr::select(ID)
-      colnames(temp) <- paste(e,names(coefs[i]),sep=".")
+  for (l in cell.line) {
+    deps <- paste0("deps.", l)
+    curr.coefs <- coefs[str_which(names(coefs), pattern = l)]
+    for (i in curr.coefs) {
+      temp <- get(deps) %>% filter(NES < 0, Comparison == eval(names(curr.coefs[curr.coefs==i]))) %>% dplyr::select(ID)
+      colnames(temp) <- paste("deps", l ,names(curr.coefs[curr.coefs==i]),sep=".")
       downreg <- c(downreg, temp)
     }
   }
@@ -85,14 +110,18 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
   
   ## Overlap ----------------------------------------------------------------------
   library(eulerr)
-  for (i in coefs) {
-    comb <- downreg[grepl(names(coefs[i]), names(downreg))]
-    temp <- plot(euler(comb), quantities = TRUE, labels = c("CFPAC", "MiaPaca", "PANC1"), main = names(coefs[i]),
+  curr.comp <- str_replace_all(names(coefs), pattern = "^[:alpha:]+.", replacement = "") %>% unique()
+  for (i in curr.comp) {
+    comb <- downreg[grepl(i, names(downreg))]
+    temp <- plot(euler(comb), 
+                 quantities = TRUE, 
+                 labels = c("PANC", "MIAPACA", "CFPAC"),
+                 main = i,
                  fills = c("white", "lightgrey", "#C4E311"))
     ggsave(
-      filename = paste0("downreg.terms.", names(coefs[i]), ".png"),
+      filename = paste0("downreg.terms.", i, ".png"),
       plot = temp,
-      path = paste0("figures/cross-analysis/overlap/", ontology),
+      path = paste0("figures/allruns/final_quant/overlap/terms",ontology),
       device = "png",
       units = "px", 
       dpi = 100,
@@ -105,22 +134,22 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG") {
   # create a named list of GO IDs
   library(GO.db)
   full.overlap.ids <- c()
-  for (i in coefs) {
-    temp <- full.overlap[grepl(paste0(names(coefs[i]),".upreg"), names(full.overlap))]
-    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(names(coefs[i]),".upreg"))
+  for (i in curr.comp) {
+    temp <- full.overlap[grepl(paste0(curr.comp[i],".upreg"), names(full.overlap))]
+    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(curr.comp[i],".upreg"))
     full.overlap.ids <- c(full.overlap.ids, temp)
-    temp <- full.overlap[grepl(paste0(names(coefs[i]),".downreg"), names(full.overlap))]
-    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(names(coefs[i]),".downreg"))
+    temp <- full.overlap[grepl(paste0(curr.comp[i],".downreg"), names(full.overlap))]
+    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(curr.comp[i],".downreg"))
     full.overlap.ids <- c(full.overlap.ids, temp)
   }
   # Convert GO IDs to term descriptions
   full.overlap.terms <- sapply(full.overlap.ids, Term)
-  
+
 return(full.overlap.terms)
+return(full.overlap)
 }
 
-
-full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "BP")
+full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "WP")
 
 
 

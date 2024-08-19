@@ -2,21 +2,27 @@ library(tidyverse)
 df <- read.delim("data/all_lines/a_Hurdle_Msqrob.tsv", header = TRUE, sep = "\t")
 df <- df[1:49]
 
+# Tidy gene names-----------------------------------------------
 df$Genes <- str_replace_all(df$Genes, "_HUMAN", replacement = "")
 df <- column_to_rownames(df, var = "Genes")
 
+# Subtract means-----------------------------------------------------
+# identify columns of each cell line
 panc.ind <- colnames(df) %>% str_which(pattern="PANC")
 miapaca.ind <- colnames(df) %>% str_which(pattern="MIAPACA")
 cfpac.ind <- colnames(df) %>% str_which(pattern="CFPAC")
 
+# calculate means of each cell line
 test <- mutate(rowwise(df), PANC.mean = mean(c_across(all_of(panc.ind)),na.rm=TRUE),
                MIAPACA.mean = mean(c_across(all_of(miapaca.ind)), na.rm = TRUE),
                CFPAC.mean = mean(c_across(all_of(cfpac.ind)), na.rm = TRUE))
 
+# subtract the means of cell lines from each
 test <- mutate(test, across(.cols = all_of(panc.ind), .fns = function(x) (x - PANC.mean)),
                across(.cols = all_of(miapaca.ind), .fns = function(x) (x - MIAPACA.mean)),
                across(.cols = all_of(cfpac.ind), .fns = function(x) (x - CFPAC.mean)))
 
+# HM annotations ------------------------------------------
 # Complex hm with annotations
 cfpac.l1 <- rep(c("2D", "3D.young", "3D.old", "PDX.2D", "PDX.3D"), each = 3)
 miapaca.l1 <- rep(c("2D", "3D.young", "3D.old", "PDX.2D", "PDX.3D"), each = 3)
@@ -47,15 +53,48 @@ names(annot_colors$Condition.L1) <- levels(annot_col$Condition.L1)
 names(annot_colors$Condition.L2) <- levels(annot_col$Condition.L2)
 names(annot_colors$Condition.L3) <- levels(annot_col$Condition.L3)
 
+# DF prep --------------------------------------------------------
 test[test==0] <- NA
+test <- as.data.frame(test)
+rownames(test) <- rownames(df)
 test <- test[1:48] %>% 
   drop_na()
 
+# Normalization ---------------------------------------------------
 # quantile norm after cell line mean norm is the appropriate sequence
 qnorm <- limma::normalizeQuantiles(as.matrix(test))
 
+# HM -----------------------------------------------------------------
 pheatmap::pheatmap(qnorm, scale = "none",
                    annotation_col = annot_col,
                    annotation_colors = annot_colors,
                    main = "Global heatmap, cell line means subtracted then qnorm")
+
+# PCA -----------------------------------------------------------------
+library(PCAtools)
+p <- pca(mat, metadata = annot_col, scale = TRUE)
+p <- pca(test, metadata = annot_col, scale = TRUE)
+
+png("figures/allruns/final_quant/pca.png")
+biplot(p, 
+       x = "PC1",
+       y = "PC2",
+       lab = NULL, 
+       # labSize = 5, 
+       shape = "Condition.L3",
+       shapekey = c("CFPAC" = 15, "MiaPaca" = 17, "PANC1" = 8),
+       showLoadings = FALSE,
+       boxedLoadingsNames = FALSE, 
+       colby = "Condition.L1",
+       colkey = annot_colors$Condition.L1,
+       title = "Pre-norm",
+       # encircle = TRUE,
+       legendPosition = "right",
+       hline = 0, 
+       vline = 0)
+dev.off()
+
+screeplot(p)
+
+plotloadings(p)
 

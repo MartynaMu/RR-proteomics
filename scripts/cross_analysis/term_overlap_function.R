@@ -135,18 +135,17 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
   library(GO.db)
   full.overlap.ids <- c()
   for (i in curr.comp) {
-    temp <- full.overlap[grepl(paste0(curr.comp[i],".upreg"), names(full.overlap))]
-    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(curr.comp[i],".upreg"))
+    temp <- full.overlap[grepl(paste0(i,".upreg"), names(full.overlap))]
+    temp <- base::Reduce(intersect, temp) %>% list() |> set_names(paste0(i,".upreg"))
     full.overlap.ids <- c(full.overlap.ids, temp)
-    temp <- full.overlap[grepl(paste0(curr.comp[i],".downreg"), names(full.overlap))]
-    temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(curr.comp[i],".downreg"))
+    temp <- full.overlap[grepl(paste0(i,".downreg"), names(full.overlap))]
+    temp <- base::Reduce(intersect, temp) %>% list() |> set_names(paste0(i,".downreg"))
     full.overlap.ids <- c(full.overlap.ids, temp)
   }
   # Convert GO IDs to term descriptions
   full.overlap.terms <- sapply(full.overlap.ids, Term)
 
 return(full.overlap.terms)
-return(full.overlap)
 }
 
 full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "WP")

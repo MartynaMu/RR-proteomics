@@ -96,4 +96,20 @@ deps.overlap <- function(coefs, cell.line) {
 
 deps.overlap(coefs = coefs, cell.line = cell.line)
 
-# DEBUG ------------------------------------------------------------------------
+# Table ------------------------------------------------------------------------
+temp <- bind_rows(deps.CFPAC,deps.MIAPACA,deps.PANC)
+temp$Category[temp$logFC < 0] <- "Down-regulated"
+temp$Category[temp$logFC > 0] <- "Up-regulated"
+temp <- separate(temp, Comparison, into = c("Cell.line", "Comparison"), sep = "\\.")
+
+temp <- temp %>% group_by(Cell.line, Comparison, Category) %>% summarise(n=n()) |> pivot_wider(names_from = "Comparison", values_from = "n")
+temp <- mutate(temp, logo=ifelse(Category == "Up-regulated", 
+                                 "arrow-up", 
+                                 "arrow-down"))
+
+temp %>% 
+  gt() %>% 
+  gt_theme_espn() |>
+  cols_merge(c(Category, logo)) |>
+  fmt_icon(logo,fill_color = c("arrow-up" = "red", "arrow-down" = "blue")) %>%
+  cols_label(logo="")

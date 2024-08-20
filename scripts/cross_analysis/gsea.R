@@ -22,6 +22,8 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs) {
     dir.create(path_data,showWarnings = TRUE,recursive = TRUE)
   }
   
+  gsea_list <- c()
+  
   for (i in coefs) {
     filename_data <- paste0("gsego_", GO, "_", names(coefs[i]), ".tsv")
     filename_fig <- paste0("gsego_", GO, "_top30_", names(coefs[i]), ".png")
@@ -60,6 +62,8 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs) {
     # remove redundant GO terms via GOSemSim methods for plotting
     simp <- clusterProfiler::simplify(gsea)
     
+    gsea_list <- c(gsea_list,simp)
+    
     # write down simplified results
     write.table(file = paste0(path_data, "simplified.", filename_data), 
                 x = simp@result, 
@@ -82,9 +86,10 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs) {
              dpi = 100)
     }
   }
+return(gsea_list)
 }
 
-compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", GO = "MF", coefs = coefs)
+gsea_list <- compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", GO = "MF", coefs = coefs)
 
 ## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, path, coefs) {
@@ -97,6 +102,8 @@ compute_keggsea <- function(fit, path, coefs) {
   if (dir.exists(path_data) == FALSE) {
     dir.create(path_data,showWarnings = TRUE,recursive = TRUE)
   }
+  
+  kegg_list <- c()
   
   for (i in coefs) {
     filename_data <- paste0("gsekegg_", names(coefs[i]), ".tsv")
@@ -121,6 +128,8 @@ compute_keggsea <- function(fit, path, coefs) {
     
     kegg <- setReadable(kegg, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
     
+    kegg_list <- c(kegg_list,kegg)
+    
     kegg_results <- kegg@result
     write.table(file = paste0(path_data, filename_data), 
                 x = kegg_results, 
@@ -143,9 +152,10 @@ compute_keggsea <- function(fit, path, coefs) {
              dpi = 100)
     }
   }
+return(kegg_list)
 }
 
-compute_keggsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
+kegg_list <- compute_keggsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
 
 ## WikiPathways ------------------------------------------------
 compute_WPgsea <- function(fit, path, coefs) {
@@ -158,6 +168,8 @@ compute_WPgsea <- function(fit, path, coefs) {
   if (dir.exists(path_data) == FALSE) {
     dir.create(path_data,showWarnings = TRUE,recursive = TRUE)
   }
+  
+  wp_list <- c()
   
   for (i in coefs) {
     filename_data <- paste0("gseWP_", names(coefs[i]), ".tsv")
@@ -176,6 +188,7 @@ compute_WPgsea <- function(fit, path, coefs) {
                  organism = "Homo sapiens")
     
     wp <- setReadable(wp, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
+    wp_list <- c(wp_list,wp)
     
     wp_results <- wp@result
     write.table(file = paste0(path_data, filename_data), 
@@ -199,6 +212,29 @@ compute_WPgsea <- function(fit, path, coefs) {
              dpi = 100)
     }
   }
+return(wp_list)
 }
 
-compute_WPgsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
+wp_list <- compute_WPgsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
+
+
+# Visualize all results stored in a list ----------------------------------------------
+for (i in coefs) {
+  temp <- names(coefs[i])
+  
+  cnetplot(wp_list[[i]], 
+           showCategory=nrow(wp_list[[i]]), 
+           foldChange=wp_list[[temp]]@geneList, 
+           node_label="category",
+           cex_label_category=.7)
+  
+  ggsave(filename=paste0("test",i,".png"),
+         path = "figures/allruns/final_quant/enrichplots/",
+         device="png", 
+         width=800,
+         height=800, 
+         units="px", 
+         dpi=100,
+         bg = "white")
+}
+

@@ -129,27 +129,160 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
       height = 500
     )
   }
-  # Retrieve overlaps and convert to descriptions ------------------------------
-  # Assign whether terms are upreg or downreg
-  # create a named list of GO IDs
-  library(GO.db)
-  full.overlap.ids <- c()
-  for (i in curr.comp) {
-    temp <- full.overlap[grepl(paste0(i,".upreg"), names(full.overlap))]
-    temp <- base::Reduce(intersect, temp) %>% list() |> set_names(paste0(i,".upreg"))
-    full.overlap.ids <- c(full.overlap.ids, temp)
-    temp <- full.overlap[grepl(paste0(i,".downreg"), names(full.overlap))]
-    temp <- base::Reduce(intersect, temp) %>% list() |> set_names(paste0(i,".downreg"))
-    full.overlap.ids <- c(full.overlap.ids, temp)
-  }
-  # Convert GO IDs to term descriptions
-  full.overlap.terms <- sapply(full.overlap.ids, Term)
-
-return(full.overlap.terms)
+  return(full.overlap)
 }
 
 full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "WP")
 
+# Retrieve overlaps of GO and convert to descriptions ------------------------------
+# Assign whether terms are upreg or downreg
+# doesn't work if there is no full overlap (check diagrams)
+# create a named list of GO IDs
+# library(GO.db)
+# full.overlap.ids <- c()
+# for (i in curr.comp) {
+#   temp <- full.overlap[grepl(paste0(i,".upreg"), names(full.overlap))]
+#   temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(i,".upreg"))
+#   full.overlap.ids <- c(full.overlap.ids, temp)
+#   temp <- full.overlap[grepl(paste0(i,".downreg"), names(full.overlap))]
+#   temp <- purrr::reduce(temp, intersect) %>% list() |> set_names(paste0(i,".downreg"))
+#   full.overlap.ids <- c(full.overlap.ids, temp)
+# }
 
+# Convert GO IDs to term descriptions
+#full.overlap.terms <- sapply(full.overlap.ids, Term)
+
+# Term overlaps in at least 2 cell lines
+full.overlap.up <- c()
+for (i in curr.comp) {
+  temp <- c()
+  temp1 <- full.overlap[grepl(paste0(i,".upreg"), names(full.overlap))]
+  temp <- c(temp,intersect(temp1[[1]], temp1[[2]]))
+  temp <- c(temp,intersect(temp1[[1]], temp1[[3]]))
+  temp <- c(temp,intersect(temp1[[3]], temp1[[2]]))
+  temp <- list(temp)
+  full.overlap.up <- c(full.overlap.up,temp)
+}
+
+names(full.overlap.up) <- paste0(curr.comp,".upreg")
+
+full.overlap.down <- c()
+for (i in curr.comp) {
+  temp <- c()
+  temp1 <- full.overlap[grepl(paste0(i,".down"), names(full.overlap))]
+  temp <- c(temp,intersect(temp1[[1]], temp1[[2]]))
+  temp <- c(temp,intersect(temp1[[1]], temp1[[3]]))
+  temp <- c(temp,intersect(temp1[[3]], temp1[[2]]))
+  temp <- list(temp)
+  full.overlap.down <- c(full.overlap.down,temp)
+}
+
+names(full.overlap.down) <- paste0(curr.comp,".down")
+
+full.overlap.terms <- c(full.overlap.down,full.overlap.up)
+
+# Retrieve gene symbols from overlapping terms
+# 1. prepare a list of pathways enriched in at least 2 cell lines
+temp <- unlist(full.overlap.terms) %>% unique()
+
+# 2. Find each pathway in gsea objects and retrieve genes from the pathway
+term.genes <- c()
+for (i in wp_list) {
+  term.genes <- c(term.genes, geneInCategory(i)[i$ID %in% temp])
+}
+
+term.desc <- c()
+for (i in wp_list) {
+  term.desc <- c(term.desc, i[i$ID %in% temp]$Description)
+}
+term.desc <- term.desc %>% unique()
+
+wp_desc <- data.frame("ID" = temp, "Description" = term.desc)
+# 3. store as a vector to use for search in matrix
+term.genes.vec <- unlist(term.genes) %>% unique() %>% sort()
+
+# 4. Prepare a matrix of FC and p-values from each comparison in each cell line
+args <- c(number = nrow(mat), resort.by = "logFC")
+
+temp <- data.frame("Genes" = rownames(topTable(fit_bayes, number=nrow(mat))))
+for (i in seq.int(1,6,1)) {
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i+6,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i+12,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  colnames(temp)[(ncol(temp)-2):ncol(temp)] <- str_c(cell.line,curr.comp[i],"logFC", sep = ".")
+}
+assign("FC", temp)
+FC <- column_to_rownames(FC, var="Genes")
+
+# 5. Retrieve FC of the genes from each comparison in each cell line
+FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+
+# 6. Look for a specific term genes
+term <- term.genes[["WP2363"]]
+
+
+# 7. Draw heatmap
+p <- pheatmap::pheatmap(FC_wp[term,],
+                   cluster_cols = FALSE,
+                   gaps_col = c(3,6,9,12,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   display_numbers = TRUE,
+                   fontsize_number = 10,
+                   number_color = "black",
+                   border_color = "black",
+                   main = "Log2FC in each comparison",
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+
+ggsave(filename = "hm_wp_pathway.png",
+       plot = p,
+      device = "png",
+      height = 500,
+      width = 1100,
+      units = "px",
+      dpi = 100)
+
+# Loop for all terms --------------------------------------------------------------
+terms <- names(term.genes)
+for (i in terms) {
+  if (length(term.genes[[i]]) > 20) {
+    p <- pheatmap::pheatmap(FC_wp[term.genes[[i]],], 
+                            cluster_cols = FALSE,
+                            gaps_col = c(3,6,9,12,15),
+                            cluster_rows = TRUE,
+                            angle_col = 45,
+                            border_color = "black",
+                            main = "Log2FC in each comparison",
+                            col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+    ggsave(filename = paste0(i,".hm.png"),
+           plot = p,
+           path = "figures/allruns/final_quant/term_overlap/",
+           device = "png",
+           height = 500,
+           width = 1100,
+           units = "px",
+           dpi = 100)
+  } else if (length(term.genes[[i]]) <= 20) {
+    p <- pheatmap::pheatmap(FC_wp[term.genes[[i]],], 
+                            cluster_cols = FALSE,
+                            gaps_col = c(3,6,9,12,15),
+                            cluster_rows = TRUE,
+                            angle_col = 45,
+                            display_numbers = TRUE,
+                            fontsize_number = 10,
+                            number_color = "black",
+                            border_color = "black",
+                            main = "Log2FC in each comparison",
+                            col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+    ggsave(filename = paste0(i,".hm.png"),
+           plot = p,
+           path = "figures/allruns/final_quant/term_overlap/",
+           device = "png",
+           height = 500,
+           width = 1100,
+           units = "px",
+           dpi = 100)
+  }
+}
 
 

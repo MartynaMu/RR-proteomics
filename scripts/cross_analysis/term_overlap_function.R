@@ -12,7 +12,7 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
     for (l in cell.line) {
       files <- list.files(paste0("figures/allruns/final_quant/gsego_results/gsego_", ontology, "_results/"), 
                           full.names = TRUE,
-                          pattern = "unsimplified")
+                          pattern = "^simplified")
       
       temp <- files[str_which(files, pattern = l)] |> lapply(read_tsv)
       curr.coef.names <- names(coefs)[str_which(names(coefs), pattern = l)]
@@ -27,7 +27,7 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
     for (l in cell.line) {
       files <- list.files(paste0("figures/allruns/final_quant/gsekegg_results/"), 
                           full.names = TRUE,
-                          pattern = "unsimplified")
+                          pattern = ".tsv")
       
       temp <- files[str_which(files, pattern = l)] |> lapply(read_tsv)
       curr.coef.names <- names(coefs)[str_which(names(coefs), pattern = l)]
@@ -132,7 +132,7 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
   return(full.overlap)
 }
 
-full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "WP")
+full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "BP")
 
 # Retrieve overlaps of GO and convert to descriptions ------------------------------
 # Assign whether terms are upreg or downreg

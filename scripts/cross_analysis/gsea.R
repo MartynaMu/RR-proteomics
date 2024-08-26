@@ -89,7 +89,7 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs) {
 return(gsea_list)
 }
 
-gsea_list <- compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", GO = "MF", coefs = coefs)
+bp_list <- compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", GO = "BP", coefs = coefs)
 
 ## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, path, coefs) {

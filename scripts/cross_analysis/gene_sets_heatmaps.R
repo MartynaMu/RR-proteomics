@@ -3,17 +3,22 @@ library(clusterProfiler)
 
 # Retrieve gene symbols from overlapping terms -------------------------------
 # 1. prepare a list of pathways enriched in at least 2 cell lines
-overlap.wp <- unlist(full.overlap.terms) %>% unique()
+#overlap.wp <- unlist(full.overlap.terms) %>% unique()
+#overlap.kegg <- unlist(full.overlap.terms) %>% unique()
+overlap.bp <- unlist(full.overlap.terms) %>% unique()
 
 # 2. Find each pathway in gsea objects and retrieve info from the pathway
 term.desc <- data.frame(matrix(ncol=3,nrow=1))
 colnames(term.desc) <- c("ID", "Description", "core_enrichment")
-for (i in wp_list) {
-  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.wp) %>% select(ID, Description, core_enrichment))
+for (i in bp_list) {
+  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.bp) %>% dplyr::select(ID, Description, core_enrichment))
 }
-term.desc <- term.desc %>% group_by(ID, Description) %>% summarise(Genes = str_flatten(pull(across(core_enrichment))))
-term.desc <- term.desc %>% rowwise() %>% mutate(Genes = str_split(Genes, pattern = "/"))
+term.desc <- term.desc %>% group_by(ID, Description) %>% summarise(Genes = str_flatten(pull(across(core_enrichment)),collapse = "/"))
+term.desc <- term.desc %>% rowwise() %>% mutate(Genes = str_split(Genes, pattern = "/") |> map(unique))
 term.desc <- drop_na(term.desc)
+
+#run in cse of GO gsea
+term.desc <- term.desc %>% mutate(ID = str_sub(ID,start=4))
 
 # Prepare a matrix of FC and p-values from each comparison in each cell line ------------
 args <- c(number = nrow(mat), resort.by = "logFC")
@@ -34,7 +39,6 @@ gr.means <- data.frame(matrix(ncol=1,nrow=nrow(test)))
 for (i in means.col) {
  gr.means <- bind_cols(gr.means,test %>% rowwise() %>% 
           transmute(mean(c_across(matches(paste0(i,"_[1234]"))), na.rm=TRUE)))
-          
 }
 gr.means <- gr.means[-1]
 colnames(gr.means) <- means.col
@@ -51,7 +55,10 @@ for (i in order) {
 gr.means <- relocate(gr.means, all_of(temp))
 
 # 5. Retrieve FC of the genes from each comparison in each cell line
-FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+term.genes.vec <- term.desc$Genes %>% flatten() %>% unlist() %>% unique()
+#FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+#FC_kegg <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+FC_bp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
 
 # 6. Look for a specific term genes
 term <- term.genes[["WP2363"]]
@@ -124,11 +131,12 @@ terms.hm <- function(FC.matrix = NULL, mean.matrix = NULL, term.descr, save = TR
   }
 }
 
-terms.hm(FC.matrix = FC_wp, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/")
+terms.hm(FC.matrix = FC_bp, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/BP/")
+terms.hm(mean.matrix = gr.means, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/BP/")
 
 # KEGG panc cancer gene set tested ---------------------------------------------
 # Parse GMT file for KEGG pancreatic cancer hallmark genes
 
 #temp <- read.gmt(gmtfile = "data/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt") # this one doesn't work for now
-temp <- read.gmt.wp(gmtfile = "data/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
+panc <- clusterProfiler::read.gmt.wp(gmtfile = "data/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
 

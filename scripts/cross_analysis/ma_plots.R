@@ -7,11 +7,29 @@ names(cfpac.gr) <- annot_col[34:48,1] %>% unique()
 
 
 #take 2 experimental groups from matrix
-x <- rowMeans(test[,c(cfpac.gr$`2D`)])
-y <- rowMeans(test[,c(panc.gr$`2D`)])
+x <- rowMeans(df[,c(miapaca.gr$`3D.young`)]) # nothing
+y <- rowMeans(df[,c(miapaca.gr$`PDX.2D`)])
 
-x <- rowMeans(qnorm[,c(cfpac.gr$`2D`)])
-y <- rowMeans(qnorm[,c(panc.gr$`2D`)])
+x <- rowMeans(med.norm[,c(miapaca.gr$`3D.young`)]) # medians norm
+y <- rowMeans(med.norm[,c(miapaca.gr$`PDX.2D`)])
+
+x <- rowMeans(test2[,c(miapaca.gr$`3D.young`)]) # medians norm then means subtracted
+y <- rowMeans(test2[,c(panc.gr$`PDX.2D`)])
+
+x <- rowMeans(test[,c(miapaca.gr$`3D.young`)]) #qnorm, then means subtracted
+y <- rowMeans(test[,c(panc.gr$`PDX.2D`)])
+
+x <- rowMeans(qnorm[,c(miapaca.gr$`3D.young`)]) # quantile normalized
+y <- rowMeans(qnorm[,c(miapaca.gr$`PDX.2D`)])
+
+x <- rowMeans(temp[,c(miapaca.gr$`3D.young`)]) # means subtracted, normalized abs medians
+y <- rowMeans(temp[,c(miapaca.gr$`PDX.2D`)])
+
+x <- rowMeans(temp2[,c(miapaca.gr$`3D.young`)]) # means subtracted, normalized cyclic loess
+y <- rowMeans(temp2[,c(miapaca.gr$`PDX.2D`)])
+
+x <- rowMeans(temp3[,c(miapaca.gr$`3D.young`)]) # means subtracted, normalized vsn
+y <- rowMeans(temp3[,c(miapaca.gr$`PDX.2D`)])
 
 M <- x - y
 A <- (x + y)/2

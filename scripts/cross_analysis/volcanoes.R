@@ -6,12 +6,13 @@ library(ggrepel)
 coefs <- seq.int(1,18,1)
 names(coefs) <- colnames(fit_bayes$contrasts)
 
-## set plot axis limits---------------------------------------------------------
+# ## set plot axis limits---------------------------------------------------------
 # min.x <- c()
 # for (i in coefs) {
 #   x <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat)) %>%
 #     dplyr::select("logFC") %>% drop_na() %>%
 #     min()
+#   cat(i,x)
 #   min.x <- c(min.x, x)
 # }
 # min.x <- min(min.x)-0.5
@@ -21,6 +22,7 @@ names(coefs) <- colnames(fit_bayes$contrasts)
 #   x <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat)) %>%
 #     dplyr::select("logFC") %>% drop_na() %>%
 #     max()
+#   cat(i,x)
 #   max.x <- c(max.x, x)
 # }
 # max.x <- max(max.x)+0.5
@@ -30,13 +32,14 @@ names(coefs) <- colnames(fit_bayes$contrasts)
 #   y <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat)) %>%
 #     dplyr::select("adj.P.Val") %>% drop_na() %>%
 #     min()
+#   cat(i,y)
 #   max.y <- c(max.y, y)
 # }
 # max.y <- min(max.y) %>% log10()*(-1)+0.5
 
-max.x <- 5.5
+max.x <- 7
 min.x <- -5.5
-max.y <- 18.5
+max.y <- 19.5
 
 ## loop -----------------------------------------------------------------------
 for (i in coefs) {

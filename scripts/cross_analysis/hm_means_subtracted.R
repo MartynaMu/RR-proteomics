@@ -6,21 +6,31 @@ df <- df[1:49]
 df$Genes <- str_replace_all(df$Genes, "_HUMAN", replacement = "")
 df <- column_to_rownames(df, var = "Genes")
 
+# Normalization ---------------------------------------------------
+qnorm <- limma::normalizeQuantiles(as.matrix(df))
+qnorm <- limma::normalizeMedianValues(as.matrix(df))
+
 # Subtract means-----------------------------------------------------
 # identify columns of each cell line
-panc.ind <- colnames(df) %>% str_which(pattern="PANC")
-miapaca.ind <- colnames(df) %>% str_which(pattern="MIAPACA")
-cfpac.ind <- colnames(df) %>% str_which(pattern="CFPAC")
+panc.ind <- colnames(qnorm) %>% str_which(pattern="PANC")
+miapaca.ind <- colnames(qnorm) %>% str_which(pattern="MIAPACA")
+cfpac.ind <- colnames(qnorm) %>% str_which(pattern="CFPAC")
 
 # calculate means of each cell line
-test <- mutate(rowwise(df), PANC.mean = mean(c_across(all_of(panc.ind)),na.rm=TRUE),
-               MIAPACA.mean = mean(c_across(all_of(miapaca.ind)), na.rm = TRUE),
-               CFPAC.mean = mean(c_across(all_of(cfpac.ind)), na.rm = TRUE))
+mat <- qnorm %>% 
+  as.data.frame() %>% 
+  rowwise() %>% 
+  mutate(PANC.mean = mean(c_across(all_of(panc.ind)),na.rm=TRUE),
+         MIAPACA.mean = mean(c_across(all_of(miapaca.ind)), na.rm = TRUE),
+         CFPAC.mean = mean(c_across(all_of(cfpac.ind)), na.rm = TRUE))
 
 # subtract the means of cell lines from each
-test <- mutate(test, across(.cols = all_of(panc.ind), .fns = function(x) (x - PANC.mean)),
+mat <- mutate(mat, across(.cols = all_of(panc.ind), .fns = function(x) (x - PANC.mean)),
                across(.cols = all_of(miapaca.ind), .fns = function(x) (x - MIAPACA.mean)),
                across(.cols = all_of(cfpac.ind), .fns = function(x) (x - CFPAC.mean)))
+mat <- mat %>% as.data.frame() %>% drop_na()
+mat <- mat[1:48]
+rownames(mat) <- df %>% drop_na() %>% rownames()
 
 # HM annotations ------------------------------------------
 # Complex hm with annotations
@@ -42,7 +52,7 @@ annot_col <- data.frame(
     c(panc1.l2, miapaca.l2, cfpac.l2)),
   Condition.L3 = as.factor(celllines))
 
-row.names(annot_col) <- colnames(test[1:48])
+row.names(annot_col) <- colnames(mat[1:48])
 
 library(RColorBrewer)
 annot_colors <- list(Condition.L1 = rev(brewer.pal(5, "Paired")),
@@ -53,19 +63,8 @@ names(annot_colors$Condition.L1) <- levels(annot_col$Condition.L1)
 names(annot_colors$Condition.L2) <- levels(annot_col$Condition.L2)
 names(annot_colors$Condition.L3) <- levels(annot_col$Condition.L3)
 
-# DF prep --------------------------------------------------------
-test[test==0] <- NA
-test <- as.data.frame(test)
-rownames(test) <- rownames(df)
-test <- test[1:48] %>% 
-  drop_na()
-
-# Normalization ---------------------------------------------------
-# quantile norm after cell line mean norm is the appropriate sequence
-qnorm <- limma::normalizeQuantiles(as.matrix(test))
-
 # HM -----------------------------------------------------------------
-pheatmap::pheatmap(qnorm, scale = "none",
+pheatmap::pheatmap(mat,
                    annotation_col = annot_col,
                    annotation_colors = annot_colors,
                    main = "Global heatmap, cell line means subtracted then qnorm")
@@ -73,7 +72,7 @@ pheatmap::pheatmap(qnorm, scale = "none",
 # PCA -----------------------------------------------------------------
 library(PCAtools)
 p <- pca(mat, metadata = annot_col, scale = TRUE)
-p <- pca(test, metadata = annot_col, scale = TRUE)
+p <- pca(qnorm, metadata = annot_col, scale = TRUE)
 
 png("figures/allruns/final_quant/pca.png")
 biplot(p, 

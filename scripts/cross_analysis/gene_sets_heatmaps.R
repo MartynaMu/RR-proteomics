@@ -3,21 +3,23 @@ library(clusterProfiler)
 
 # Retrieve gene symbols from overlapping terms -------------------------------
 # 1. prepare a list of pathways enriched in at least 2 cell lines
-#overlap.wp <- unlist(full.overlap.terms) %>% unique()
+overlap.wp <- unlist(full.overlap.terms) %>% unique()
 #overlap.kegg <- unlist(full.overlap.terms) %>% unique()
-overlap.bp <- unlist(full.overlap.terms) %>% unique()
+#overlap.bp <- unlist(full.overlap.terms) %>% unique()
+#overlap.cc <- unlist(full.overlap.terms) %>% unique()
+#overlap.mf <- unlist(full.overlap.terms) %>% unique()
 
 # 2. Find each pathway in gsea objects and retrieve info from the pathway
 term.desc <- data.frame(matrix(ncol=3,nrow=1))
 colnames(term.desc) <- c("ID", "Description", "core_enrichment")
-for (i in bp_list) {
-  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.bp) %>% dplyr::select(ID, Description, core_enrichment))
+for (i in wp_list) {
+  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.wp) %>% dplyr::select(ID, Description, core_enrichment))
 }
 term.desc <- term.desc %>% group_by(ID, Description) %>% summarise(Genes = str_flatten(pull(across(core_enrichment)),collapse = "/"))
 term.desc <- term.desc %>% rowwise() %>% mutate(Genes = str_split(Genes, pattern = "/") |> map(unique))
 term.desc <- drop_na(term.desc)
 
-#run in cse of GO gsea
+#run in case of GO gsea
 term.desc <- term.desc %>% mutate(ID = str_sub(ID,start=4))
 
 # Prepare a matrix of FC and p-values from each comparison in each cell line ------------
@@ -25,24 +27,25 @@ args <- c(number = nrow(mat), resort.by = "logFC")
 
 temp <- data.frame("Genes" = rownames(topTable(fit_bayes, number=nrow(mat))))
 for (i in seq.int(1,6,1)) {
-  temp <- left_join(temp,(topTable(fit_bayes,coef=i,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
-  temp <- left_join(temp,(topTable(fit_bayes,coef=i+6,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
-  temp <- left_join(temp,(topTable(fit_bayes,coef=i+12,substitute(args))) |> select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i,substitute(args))) |> dplyr::select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i+6,substitute(args))) |> dplyr::select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
+  temp <- left_join(temp,(topTable(fit_bayes,coef=i+12,substitute(args))) |> dplyr::select(logFC) %>% rownames_to_column(var = "Genes"), by="Genes")
   colnames(temp)[(ncol(temp)-2):ncol(temp)] <- str_c(cell.line,curr.comp[i],"logFC", sep = ".")
 }
 assign("FC", temp)
 FC <- column_to_rownames(FC, var="Genes")
 
 # Prepare a matrix of means in each comparison in each cell line -------------------------------
-means.col <- colnames(test) %>% str_sub(end=-3L) %>% unique()
-gr.means <- data.frame(matrix(ncol=1,nrow=nrow(test)))
+mat <- as.data.frame(mat)
+means.col <- colnames(mat) %>% str_sub(end=-3L) %>% unique()
+gr.means <- data.frame(matrix(ncol=1,nrow=nrow(mat)))
 for (i in means.col) {
- gr.means <- bind_cols(gr.means,test %>% rowwise() %>% 
+ gr.means <- bind_cols(gr.means,mat %>% rowwise() %>% 
           transmute(mean(c_across(matches(paste0(i,"_[1234]"))), na.rm=TRUE)))
 }
 gr.means <- gr.means[-1]
 colnames(gr.means) <- means.col
-rownames(gr.means) <- rownames(test)
+rownames(gr.means) <- rownames(mat)
 # order colnames group wise
 order <- colnames(gr.means) %>% str_replace_all(pattern = "MIAPACA|PANC|CFPAC", replacement = "") %>% unique()
 order[1] <- str_c(order[1],"$")
@@ -56,13 +59,11 @@ gr.means <- relocate(gr.means, all_of(temp))
 
 # 5. Retrieve FC of the genes from each comparison in each cell line
 term.genes.vec <- term.desc$Genes %>% flatten() %>% unlist() %>% unique()
-#FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
 #FC_kegg <- FC %>% filter(rownames(FC) %in% term.genes.vec)
-FC_bp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
-
-# 6. Look for a specific term genes
-term <- term.genes[["WP2363"]]
-
+#FC_bp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+#FC_cc <- FC %>% filter(rownames(FC) %in% term.genes.vec)
+#FC_mf <- FC %>% filter(rownames(FC) %in% term.genes.vec)
 
 # 7. Draw heatmap
 # HM loop for all terms --------------------------------------------------------------
@@ -87,7 +88,7 @@ terms.hm <- function(FC.matrix = NULL, mean.matrix = NULL, term.descr, save = TR
     names(term.genes) <- i
     matrix.to.use <- matrix %>% filter(rownames(matrix) %in% term.genes[[i]])
     if (length(term.genes[[i]]) > 20) {
-      p <- pheatmap::pheatmap(matrix.to.use, 
+      p <- pheatmap::pheatmap(matrix.to.use,
                               cluster_cols = FALSE,
                               gaps_col = c(3,6,9,12,15),
                               cluster_rows = TRUE,
@@ -132,7 +133,7 @@ terms.hm <- function(FC.matrix = NULL, mean.matrix = NULL, term.descr, save = TR
 }
 
 terms.hm(FC.matrix = FC_bp, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/BP/")
-terms.hm(mean.matrix = gr.means, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/BP/")
+terms.hm(mean.matrix = gr.means, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/WP/")
 
 # KEGG panc cancer gene set tested ---------------------------------------------
 # Parse GMT file for KEGG pancreatic cancer hallmark genes

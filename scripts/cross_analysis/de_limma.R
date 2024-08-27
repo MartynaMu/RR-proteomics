@@ -1,5 +1,5 @@
 library(limma)
-mat <- as.matrix(qnorm)
+mat <- as.matrix(mat)
 
 design <- model.matrix(~ 0+factor(c(rep(1,4),
                                     rep(2,4),

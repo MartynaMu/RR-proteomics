@@ -7,7 +7,7 @@ df$Genes <- str_replace_all(df$Genes, "_HUMAN", replacement = "")
 df <- column_to_rownames(df, var = "Genes")
 
 # Normalization ---------------------------------------------------
-qnorm <- limma::normalizeQuantiles(as.matrix(df))
+#qnorm <- limma::normalizeQuantiles(as.matrix(df))
 qnorm <- limma::normalizeMedianValues(as.matrix(df))
 
 # Subtract means-----------------------------------------------------
@@ -67,14 +67,16 @@ names(annot_colors$Condition.L3) <- levels(annot_col$Condition.L3)
 pheatmap::pheatmap(mat,
                    annotation_col = annot_col,
                    annotation_colors = annot_colors,
-                   main = "Global heatmap, cell line means subtracted then qnorm")
+                   annotation_names_col = FALSE,
+                   show_rownames = FALSE,
+                   main = "Global heatmap, medians normalized, means subtracted")
 
 # PCA -----------------------------------------------------------------
 library(PCAtools)
-p <- pca(mat, metadata = annot_col, scale = TRUE)
-p <- pca(qnorm, metadata = annot_col, scale = TRUE)
+p <- pca(drop_na(df), metadata = annot_col, scale = TRUE) # pre norm
+p <- pca(mat, metadata = annot_col, scale = TRUE) # post norm
 
-png("figures/allruns/final_quant/pca.png")
+png("figures/allruns/final_quant/pca-post-norm.png")
 biplot(p, 
        x = "PC1",
        y = "PC2",
@@ -86,7 +88,7 @@ biplot(p,
        boxedLoadingsNames = FALSE, 
        colby = "Condition.L1",
        colkey = annot_colors$Condition.L1,
-       title = "Pre-norm",
+       title = "Post-norm",
        # encircle = TRUE,
        legendPosition = "right",
        hline = 0, 

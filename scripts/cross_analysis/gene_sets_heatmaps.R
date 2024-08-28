@@ -46,16 +46,6 @@ for (i in means.col) {
 gr.means <- gr.means[-1]
 colnames(gr.means) <- means.col
 rownames(gr.means) <- rownames(mat)
-# order colnames group wise
-order <- colnames(gr.means) %>% str_replace_all(pattern = "MIAPACA|PANC|CFPAC", replacement = "") %>% unique()
-order[1] <- str_c(order[1],"$")
-
-temp <- c()
-for (i in order) {
-  temp <- c(temp, str_which(colnames(gr.means), pattern = i))
-}
-
-gr.means <- relocate(gr.means, all_of(temp))
 
 # 5. Retrieve FC of the genes from each comparison in each cell line
 term.genes.vec <- term.desc$Genes %>% flatten() %>% unlist() %>% unique()
@@ -67,73 +57,8 @@ FC_wp <- FC %>% filter(rownames(FC) %in% term.genes.vec)
 
 # 7. Draw heatmap
 # HM loop for all terms --------------------------------------------------------------
-
-terms.hm <- function(FC.matrix = NULL, mean.matrix = NULL, term.descr, save = TRUE, path = NULL) {
-  
-  if (!is.null(FC.matrix)) {
-    matrix <- FC.matrix
-    plot.desc <- "Log2FC in each comparison"
-    file.desc <- ".hm.fc.png"
-    path2 <- "fc/"
-  } else if (!is.null(mean.matrix)) {
-    matrix <- mean.matrix
-    plot.desc <- "Mean group intensity"
-    file.desc <- ".hm.mean.png"
-    path2 <- "means/"
-  }
-  terms <- term.descr$ID
-  for (i in terms) {
-    term.desc <- term.descr %>% filter(ID == i) %>% pull(Description)
-    term.genes <- term.descr %>% filter(ID == i) %>% pull(Genes)
-    names(term.genes) <- i
-    matrix.to.use <- matrix %>% filter(rownames(matrix) %in% term.genes[[i]])
-    if (length(term.genes[[i]]) > 20) {
-      p <- pheatmap::pheatmap(matrix.to.use,
-                              cluster_cols = FALSE,
-                              gaps_col = c(3,6,9,12,15),
-                              cluster_rows = TRUE,
-                              angle_col = 45,
-                              border_color = "black",
-                              main = sprintf("%s - %s (%s)", plot.desc, term.desc, i),
-                              col=colorRampPalette(c("cornflowerblue","white","red"))(100))
-      if (save==TRUE) {
-        ggsave(filename = paste0(i, file.desc),
-               plot = p,
-               path = paste0(path ,path2),
-               device = "png",
-               height = 500,
-               width = 1100,
-               units = "px",
-               dpi = 100)
-      }
-    } else if (length(term.genes[[i]]) <= 20) {
-      p <- pheatmap::pheatmap(matrix.to.use, 
-                              cluster_cols = FALSE,
-                              gaps_col = c(3,6,9,12,15),
-                              cluster_rows = TRUE,
-                              angle_col = 45,
-                              display_numbers = TRUE,
-                              fontsize_number = 10,
-                              number_color = "black",
-                              border_color = "black",
-                              main = sprintf("%s - %s (%s)", plot.desc, term.desc, i),
-                              col=colorRampPalette(c("cornflowerblue","white","red"))(100))
-      if (save==TRUE) {
-        ggsave(filename = paste0(i, file.desc),
-               plot = p,
-               path = paste0(path, path2),
-               device = "png",
-               height = 500,
-               width = 1100,
-               units = "px",
-               dpi = 100)
-      }
-    }
-  }
-}
-
-terms.hm(FC.matrix = FC_bp, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/BP/")
-terms.hm(mean.matrix = gr.means, term.descr = term.desc, save = TRUE, path = "figures/allruns/final_quant/term_overlap/WP/")
+terms.hm(FC.matrix = FC_wp, term.descr = term.desc, orderGroupWise = FALSE, save = TRUE, path = "figures/allruns/final_quant/term_overlap/WP/")
+terms.hm(mean.matrix = gr.means, term.descr = term.desc, orderGroupWise = FALSE, save = TRUE, path = "figures/allruns/final_quant/term_overlap/WP/")
 
 # KEGG panc cancer gene set tested ---------------------------------------------
 # Parse GMT file for KEGG pancreatic cancer hallmark genes

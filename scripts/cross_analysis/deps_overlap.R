@@ -101,11 +101,11 @@ temp$Category[temp$logFC > 0] <- "Up-regulated"
 temp <- separate(temp, Comparison, into = c("Cell.line", "Comparison"), sep = "\\.")
 
 temp <- temp %>% group_by(Cell.line, Comparison, Category) %>% summarise(n=n()) |> pivot_wider(names_from = "Comparison", values_from = "n")
-temp <- mutate(temp, logo=ifelse(Category == "Up-regulated", 
+dep.table <- mutate(temp, logo=ifelse(Category == "Up-regulated", 
                                  "arrow-up", 
                                  "arrow-down"))
 
-temp %>% 
+dep.table %>% 
   gt() %>% 
   gt_theme_espn() |>
   cols_merge(c(Category, logo)) |>

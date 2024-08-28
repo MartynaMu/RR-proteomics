@@ -93,8 +93,8 @@ mf_list <- compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", 
 
 ## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, path, coefs) {
-  path_figs <- paste0(path, "gsekegg_results")
-  path_data <- paste0(path, "gsekegg_results")
+  path_figs <- paste0(path, "gsekegg_results/")
+  path_data <- paste0(path, "gsekegg_results/")
   if (dir.exists(path_figs) == FALSE) {
     dir.create(path_figs,showWarnings = TRUE,recursive = TRUE)
   }
@@ -159,8 +159,8 @@ kegg_list <- compute_keggsea(fit = fit_bayes, path = "figures/allruns/final_quan
 
 ## WikiPathways ------------------------------------------------
 compute_WPgsea <- function(fit, path, coefs) {
-  path_figs <- paste0(path, "gseWP_results")
-  path_data <- paste0(path, "gseWP_results")
+  path_figs <- paste0(path, "gseWP_results/")
+  path_data <- paste0(path, "gseWP_results/")
   if (dir.exists(path_figs) == FALSE) {
     dir.create(path_figs,showWarnings = TRUE,recursive = TRUE)
   }

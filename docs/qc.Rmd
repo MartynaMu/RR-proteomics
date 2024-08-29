@@ -1,0 +1,88 @@
+---
+title: "Quality control of proteomic data"
+subtitle: ""
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: yeti
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics")
+options(knitr.duplicate.label = "allow")
+load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
+library(tidyverse)
+```
+
+Data from MSQrob and Hurdle algorithms were median-centered and for each protein their mean in a given cell line was subtracted (meaning every protein in every cell line had their own "0"), to get rid of changes driven solely by the cell line protein level.
+
+```{r vioplots, message=FALSE, results="asis", fig.width=11, warning=FALSE}
+library(vioplot)
+cat("  \n Violin plot of pre-normalized data   \n")
+vioplot(drop_na(df))
+cat("  \n")
+cat("Violin plot of post-normalized data  \n")
+vioplot(mat)
+```
+
+
+```{r pca1, message=FALSE, results="asis", fig.height=9,warning=FALSE, fig.show="hold", out.width="50%", fig.asp=0.6}
+library(PCAtools)
+p1 <- pca(drop_na(df), metadata = annot_col, scale = TRUE) # pre norm
+p2 <- pca(mat, metadata = annot_col, scale = TRUE) # post norm
+
+biplot(p1, 
+       x = "PC1",
+       y = "PC2",
+       lab = NULL, 
+       # labSize = 5, 
+       shape = "Condition.L3",
+       shapekey = c("CFPAC" = 15, "MiaPaca" = 17, "PANC1" = 8),
+       showLoadings = FALSE,
+       boxedLoadingsNames = FALSE, 
+       colby = "Condition.L1",
+       colkey = annot_colors$Condition.L1,
+       title = "Pre-norm",
+       # encircle = TRUE,
+       legendPosition = "right",
+       hline = 0, 
+       vline = 0)
+
+biplot(p2, 
+       x = "PC1",
+       y = "PC2",
+       lab = NULL, 
+       # labSize = 5, 
+       shape = "Condition.L3",
+       shapekey = c("CFPAC" = 15, "MiaPaca" = 17, "PANC1" = 8),
+       showLoadings = FALSE,
+       boxedLoadingsNames = FALSE, 
+       colby = "Condition.L1",
+       colkey = annot_colors$Condition.L1,
+       title = "Post-norm",
+       # encircle = TRUE,
+       legendPosition = "right",
+       hline = 0, 
+       vline = 0)
+```
+
+```{r pca2, message=FALSE, results="asis", warning=FALSE, fig.show="hold", out.width="50%", fig.asp=0.6}
+screeplot(p1,axisLabSize = 8)
+screeplot(p2)
+
+```
+
+
+```{r heatmaps, message=FALSE, results="asis", fig.width=11, fig.height=7}
+pheatmap::pheatmap(mat,
+                   annotation_col = annot_col,
+                   annotation_colors = annot_colors,
+                   annotation_names_col = FALSE,
+                   show_rownames = FALSE,
+                   main = "Global heatmap of post-normalized data")
+
+```
+
+

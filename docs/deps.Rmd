@@ -1,0 +1,202 @@
+---
+title: "Differentially expressed proteins (DEPs)"
+subtitle: ""
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    number_sections: TRUE
+    theme: yeti
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning=FALSE)
+knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics")
+options(knitr.duplicate.label = "allow")
+load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(ggpubr)
+library(limma)
+```
+
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
+}
+```
+
+# Table
+<hr style="border:1px solid gray">
+
+```{r table}
+# Table ------------------------------------------------------------------------
+library(gtExtras)
+library(fontawesome)
+temp <- bind_rows(deps.CFPAC,deps.MIAPACA,deps.PANC)
+temp$Category <- NA
+temp$Category[temp$logFC < 0] <- "Down-regulated"
+temp$Category[temp$logFC > 0] <- "Up-regulated"
+temp <- separate(temp, Comparison, into = c("Cell.line", "Comparison"), sep = "\\.")
+
+temp <- temp %>% group_by(Cell.line, Comparison, Category) %>% summarise(n=n()) |> pivot_wider(names_from = "Comparison", values_from = "n")
+dep.table <- mutate(temp, logo=ifelse(Category == "Up-regulated", 
+                                 "arrow-up", 
+                                 "arrow-down"))
+
+dep.table %>% 
+  gt() %>% 
+  gt_theme_espn() |>
+  tab_header(title="Number of differentially expressed proteins",
+             subtitle="adjusted p-value < 0.05, no log2FC cut-off") |>
+  cols_merge(c(Category, logo)) |>
+  fmt_icon(logo,fill_color = c("arrow-up" = "red", "arrow-down" = "blue")) %>%
+  cols_label(logo="")
+
+```
+
+# Venn diagrams
+<hr style="border:1px solid gray">
+Checking overlaps between cell lines of significantly changed proteins.
+adjusted p-value < 0.05, no log2FC cut-off
+
+```{r out.width="33%", fig.ncol=3, results='asis'}
+library(eulerr)
+cat("  \n <center> ----------------Up-regulated DEPs---------------- </center>  \n")
+for (i in curr.comp) {
+  comb <- upreg[grepl(i, names(upreg))]
+  print(plot(euler(comb), quantities = list(cex=1.5), 
+               labels = list(labels=c("PANC", "MIAPACA", "CFPAC"),cex=1.5), 
+               main = i,
+               fills = c("white", "lightgrey", "#C4E311")))
+}
+cat("  \n")
+cat("  \n <center> ----------------Down-regulated DEPs---------------- </center>  \n")
+for (i in curr.comp) {
+  comb <- downreg[grepl(i, names(downreg))]
+  print(plot(euler(comb), quantities = list(cex=1.5), 
+               labels = list(labels=c("PANC", "MIAPACA", "CFPAC"),cex=1.5), 
+               main = i,
+               fills = c("white", "lightgrey", "#C4E311")))
+}
+cat("  \n")
+```
+
+
+# Heatmap
+<hr style="border:1px solid gray">
+
+```{r heatmap.deps, results="asis", fig.width=11, fig.height=7}
+filtr <- c()
+for (i in coefs) {
+  temp <- topTable(fit_bayes, coef = i, adjust="BH", p.value = .05, number = nrow(mat), lfc = 1.3) |> rownames_to_column(var="Gene") %>% pull(Gene)
+  filtr <- c(filtr, temp)
+}
+filtr <- filtr %>% unique()
+
+mat %>% filter(rownames(mat) %in% filtr) |>
+  pheatmap::pheatmap(annotation_col = annot_col,
+                   annotation_colors = annot_colors,
+                   annotation_names_col = FALSE,
+                   show_rownames = FALSE,
+                   main = "DEPs of log2FC cut-off = |1.3|")
+
+```
+
+# Volcano plots
+<hr style="border:1px solid gray">
+
+```{r volcanoes, results="asis", fig.width=12, fig.height=30}
+
+volcanoes <- list()
+for (i in coefs) {
+  deps <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat))
+  
+  volc_data <- deps
+  volc_data$Category <- "Not significant"
+  volc_data$Category[volc_data$logFC <= -1.3 & volc_data$adj.P.Val <= 0.05] <- "Down-regulated"
+  volc_data$Category[volc_data$logFC >= 1.3 & volc_data$adj.P.Val <= 0.05] <- "Up-regulated"
+  volc_data$Label <- NA
+  volc_data$Label[volc_data$Category != "Not significant"] <- volc_data$ID[volc_data$Category != "Not significant"]
+  
+  upreg <- volc_data$ID[volc_data$Category == "Up-regulated"]
+  downreg <- volc_data$ID[volc_data$Category == "Down-regulated"]
+  
+  #set comparison name
+  comp <- str_split_1(names(coefs[i]), pattern = "_")
+  
+  theme_set(theme_light())
+  volcanoes[[i]] <- ggplot(volc_data,
+              aes(x = logFC,
+                  y = (-1*log10(adj.P.Val)),
+                  color = Category,
+                  label = Label))+
+    geom_point(alpha = .5)+
+    scale_color_manual(values = c("Down-regulated" = "blue", "Not significant" = "gray", "Up-regulated" = "red"))+
+    labs(title = names(coefs[i]),
+         y = "-log10 adj. p-value",
+         x = sprintf("log2 fold change (%s/%s)", comp[2], comp[1]))+
+    geom_hline(yintercept = 1.3, lty=2)+
+    geom_vline(xintercept = c(-1.3,1.3), lty=2)+
+    scale_x_continuous(limits = c(min.x,max.x))+
+    scale_y_continuous(limits = c(0,max.y))+
+    theme(legend.position = "none",
+          text = element_text(size=10))+
+    geom_text_repel(colour = "black", max.overlaps = 15, size = 3.5)+
+    annotate("text", x = -5, y=0, col= "blue",label=paste0("n=",length(downreg)))+
+    annotate("text", x = 5.5, y=0, col= "red",label=paste0("n=",length(upreg)))
+}
+plot <- do.call(ggarrange, c(volcanoes, ncol=3, nrow=6, common.legend=TRUE))
+annotate_figure(plot, top=text_grob("DEPs, log2FC cut-off = |1.3|", size = 15))
+
+```
+
+# Gene occurence in WikiPathways GSEA-enriched terms
+<hr style="border:1px solid gray">
+Checking for potentially most important genes which expression was significantly changed
+
+```{r fig.width=12, fig.height=5}
+library(ggpubr)
+library(tidyverse)
+library(ggplot2)
+
+sum_gene_occ %>% 
+  filter(Count>30) |> 
+  ggbarplot(x = "Gene", y="Count", 
+            fill = "Direction",
+            palette = c("steelblue","firebrick"),
+            label=TRUE,
+            xlab="Gene symbol",
+            ylab="Gene count",
+            title = "Top gene count in WikiPathways GSEA-enriched terms in all comparisons") |>
+  facet(facet.by = "Direction", nrow=2)+
+  font("x.text", size = 8)+
+  scale_y_continuous(limits = c(0,120))
+```
+
+```{r fig.width=12, fig.height=12}
+filtr2 <- sum_gene_occ %>% filter(Count > 30) %>% pull(Gene)
+comp_gene_occ %>% 
+  mutate(CompCount = case_when(Direction == "Down" ~ CompCount*-(1), .default = CompCount)) |>
+  filter(Gene %in% filtr2) |>
+  ggbarplot(x="Gene", y="CompCount",
+            fill = "Direction",
+            palette = c("steelblue","firebrick"),
+            rotate=TRUE,
+            xlab = "Gene symbol",
+            ylab = "Gene count",
+            title = "Top gene count in WikiPathways GSEA-enriched terms in each comparison") |>
+  facet(facet.by = c("Comp"), ncol = 2,panel.labs.font = list(size=12), 
+        scales="free_y",
+        panel.labs.background = list(color="white", fill="white"))+
+  scale_y_continuous(limits=c(-45,45))+
+  geom_text(aes(label=CompCount), hjust = "outward", size=3.5)+
+  font("xy.text", size = 8)
+
+```
+
+
+

@@ -1,0 +1,64 @@
+---
+title: "GSEA-enriched WikiPathways terms"
+subtitle: "- overlap in at least 2/3 cell lines"
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: yeti
+    toc: true
+    toc_float: 
+      collapsed: false
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 11)
+knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics")
+options(knitr.duplicate.label = "allow")
+load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
+# rmarkdown::render(input="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_plots.Rmd", output_file="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_WP.html")
+library(tidyverse)
+library(rmarkdown)
+library(pheatmap)
+```
+
+
+```{r message=FALSE,results="asis"}
+# cat("  \n## Pancreatic cancer marker gene expression  \n", sep="")
+# cat("  \n## {.tabset}  \n")
+# cat("  \n### Means  \n")
+# gr.means %>%
+#   filter(rownames(gr.means) %in% panc.cancer.genes$gene) |>
+#   pheatmap::pheatmap(cluster_cols = FALSE,
+#                      gaps_col = c(3,6,9,12,15),
+#                      cluster_rows = TRUE,
+#                      angle_col = 45,
+#                      display_numbers = TRUE,
+#                      fontsize_number = 10,
+#                      number_color = "black",
+#                      border_color = "black",
+#                      col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+# cat("  \n")
+# cat("  \n### Log2FC  \n")
+# FC %>%
+#   filter(rownames(FC) %in% panc.cancer.genes$gene) |>
+#   pheatmap::pheatmap(cluster_cols = FALSE,
+#                      gaps_col = c(3,6,9,12,15),
+#                      cluster_rows = TRUE,
+#                      angle_col = 45,
+#                      display_numbers = TRUE,
+#                      fontsize_number = 10,
+#                      number_color = "black",
+#                      border_color = "black",
+#                      col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+# cat("  \n")
+```
+
+
+```{r message=FALSE,results="asis"}
+terms.hm.report(mean.matrix = gr.means, FC.matrix = FC_wp, term.descr = term.desc)
+```
+
+
+

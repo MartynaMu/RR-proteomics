@@ -13,52 +13,160 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.width = 11)
-knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics")
+knitr::opts_chunk$set(fig.width = 11, warning=FALSE, message=FALSE, echo=FALSE)
+knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics", verbose = FALSE, progress = FALSE)
 options(knitr.duplicate.label = "allow")
 load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
-# rmarkdown::render(input="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_plots.Rmd", output_file="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_WP.html")
+# rmarkdown::render(input="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_plots.Rmd", output_file="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/test.html")
 library(tidyverse)
 library(rmarkdown)
 library(pheatmap)
+library(knitr)
 ```
 
-
-```{r message=FALSE,results="asis"}
-# cat("  \n## Pancreatic cancer marker gene expression  \n", sep="")
-# cat("  \n## {.tabset}  \n")
-# cat("  \n### Means  \n")
-# gr.means %>%
-#   filter(rownames(gr.means) %in% panc.cancer.genes$gene) |>
-#   pheatmap::pheatmap(cluster_cols = FALSE,
-#                      gaps_col = c(3,6,9,12,15),
-#                      cluster_rows = TRUE,
-#                      angle_col = 45,
-#                      display_numbers = TRUE,
-#                      fontsize_number = 10,
-#                      number_color = "black",
-#                      border_color = "black",
-#                      col=colorRampPalette(c("cornflowerblue","white","red"))(100))
-# cat("  \n")
-# cat("  \n### Log2FC  \n")
-# FC %>%
-#   filter(rownames(FC) %in% panc.cancer.genes$gene) |>
-#   pheatmap::pheatmap(cluster_cols = FALSE,
-#                      gaps_col = c(3,6,9,12,15),
-#                      cluster_rows = TRUE,
-#                      angle_col = 45,
-#                      display_numbers = TRUE,
-#                      fontsize_number = 10,
-#                      number_color = "black",
-#                      border_color = "black",
-#                      col=colorRampPalette(c("cornflowerblue","white","red"))(100))
-# cat("  \n")
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
+}
 ```
 
+```{r plots, results="asis"}
 
-```{r message=FALSE,results="asis"}
-terms.hm.report(mean.matrix = gr.means, FC.matrix = FC_wp, term.descr = term.desc)
+
+terms.hm.report <- function(FC.matrix, mean.matrix, term.descr) {
+  terms <- term.descr$ID
+  
+  # order colnames group-wise
+  order <- colnames(mean.matrix) %>% str_replace_all(pattern = "MIAPACA|PANC|CFPAC", replacement = "") %>% unique()
+  order[1] <- str_c(order[1],"$")
+  
+  temp <- c()
+  for (i in order) {
+    temp <- c(temp, str_which(colnames(mean.matrix), pattern = i))
+  }
+  mean.matrix.gr <- relocate(mean.matrix, all_of(temp))
+  
+  for (i in terms) {
+    curr.term.desc <- term.descr %>% filter(ID == i) %>% pull(Description)
+    term.genes <- term.descr %>% filter(ID == i) %>% pull(Genes) %>% unlist()
+    # determine figure height
+    if(length(term.genes) < 20){
+      height <- 5
+    } else if(length(term.genes) > 20 && length(term.genes) <= 40) {
+      height <- 6
+    } else if(length(term.genes) > 40 && length(term.genes) <= 60) {
+      height <- 7
+    } else if(length(term.genes) > 60 && length(term.genes) <= 90) {
+      height <- 8
+    }
+
+    # Means grouped cell.line-wise
+    if (length(term.genes) > 20) {
+      p <- mean.matrix %>% filter(rownames(mean.matrix) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           fontsize_row = 7,
+                           border_color = "black",
+                           gaps_col = c(5,10,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl1 <- p$gtable
+      cat("  \n")
+    } else if (length(term.genes) <= 20) {
+      p <- mean.matrix %>% filter(rownames(mean.matrix) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           display_numbers = TRUE,
+                           fontsize_number = 10,
+                           fontsize_row = 7,
+                           number_color = "black",
+                           border_color = "black",
+                           gaps_col = c(5,10,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl1 <- p$gtable
+      cat("  \n")
+    }
+    # Means grouped experimental group-wise
+    
+    if (length(term.genes) > 20) {
+      p <- mean.matrix.gr %>% filter(rownames(mean.matrix.gr) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           fontsize_row = 7,
+                           border_color = "black",
+                           gaps_col = c(3,6,9,12,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl2 <- p$gtable
+      cat("  \n")
+    } else if (length(term.genes) <= 20) {
+      p <- mean.matrix.gr %>% filter(rownames(mean.matrix.gr) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           display_numbers = TRUE,
+                           fontsize_number = 10,
+                           fontsize_row = 7,
+                           number_color = "black",
+                           border_color = "black",
+                           gaps_col = c(3,6,9,12,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl2 <- p$gtable
+      cat("  \n")
+    }
+    # Log2FC matrix
+    
+    if (length(term.genes) > 20) {
+      p <- FC.matrix %>% filter(rownames(FC.matrix) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           fontsize_row = 7,
+                           border_color = "black",
+                           gaps_col = c(3,6,9,12,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl3 <- p$gtable
+      cat("  \n")
+    } else if (length(term.genes) <= 20) {
+      p <- FC.matrix %>% filter(rownames(FC.matrix) %in% term.genes) |>
+        pheatmap::pheatmap(cluster_cols = FALSE,
+                           cluster_rows = TRUE,
+                           silent = TRUE,
+                           angle_col = 45,
+                           display_numbers = TRUE,
+                           fontsize_number = 10,
+                           fontsize_row = 7,
+                           number_color = "black",
+                           border_color = "black",
+                           gaps_col = c(3,6,9,12,15),
+                           col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+      .pl3 <- p$gtable
+      cat("  \n")
+    }
+    desc <- cat("  \n##", sprintf("%s (%s)",curr.term.desc, i), "  \n")
+    cat(knit(text = knit_expand(
+      text =
+          sprintf(
+            "```{r, fig.height=%s}\n%s\n%s%s plot(.pl1) %s plot(.pl2) %s plot(.pl3) \n",
+            height,
+            desc,
+            cat('  \n## {.tabset}  \n'),
+            cat('  \n### Means cell line-wise  \n'),
+            cat(" \n### Means exp.group-wise  \n"),
+            cat("  \n### Log2FC  \n"))
+    )))
+  }
+}
+
+
+
+terms.hm.report(mean.matrix = gr.means, FC.matrix = FC_wp, term.descr = term.desc[1:2,])
 ```
-
 
 

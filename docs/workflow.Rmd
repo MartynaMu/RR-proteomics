@@ -1,0 +1,53 @@
+---
+title: "Cell models in pancreatic cancer <br> - proteomic data processing"
+subtitle: "Project collaboration of Real Research and ICCVS"
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: yeti
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
+}
+```
+
+# Proteomic data processing workflow
+<hr style="border:1px solid gray">
+
+1. FASTA databases
+  + SwissProt & Tremble human and murine FASTA databases - UniProt
+  + FASTA to tabular - Galaxy
+  + Murine and human protein databases were merged and filtered for non-redundant sequences - pep_lib_shared.R
+  + FBS and common contaminants were added and filtered for non-redundant sequences - pep_lib_shared.R
+  + iRTs sequences was added - pep_lib_shared.R
+  + Tabular to FASTA and width conversion - Galaxy
+
+2. Peptide library
+  + DDA library creation from DDA files - Fragpipe
+  + pseudo-DDA library creation from output of Umpire on DIA files - Fragpipe
+  + Conversion of DIA files to DIANN format - mzml.dia
+  + Library creation de novo from deep-learning networks - DIANN
+  + Retention Time alignment of libraries - custom python script
+  + Quantitation in DIANN to create one merged library
+  + Library filtering to only human precursor peptides - no_murine_pep.R
+  + Quantitation of all runs using automatic mass shift tolerance - DIANN
+  + Quantitation of all runs using defined mass shift tolerances as suggested in previous process - DIANN
+
+3. TSV matrix - MSqRob & Hurdle
+
+4. Quantitation matrix - R
+  + Tidying up and preparation for downstream analysis - processing.R
+  + Normalization methods performance with MA plots – LIMMA and affy packages - ma_plots.R
+  + Median centering and subtracting means of each cell line and every protein - processing.R
+  + Differential expression, volcano plots, overlap - LIMMA, eulerr - de_limma.R, volcanoes.R, deps_overlap.R
+  + GO, KEGG, WP GSEA - clusterProfiler, org.Hs.eg.db, enrichplot - gsea.R
+  + Further data analysis - term_overlap_function.R, gene_sets_heatmap.R, gene_occ_in_terms.R
+  
+  

@@ -5,6 +5,7 @@ author: "Martyna Muszczek"
 date: "`r Sys.Date()`"
 output: 
   html_document:
+    number_sections: TRUE
     theme: yeti
 ---
 
@@ -16,7 +17,16 @@ load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
 library(tidyverse)
 ```
 
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
+}
+```
+
 Data from MSQrob and Hurdle algorithms were median-centered and for each protein their mean in a given cell line was subtracted (meaning every protein in every cell line had their own "0"), to get rid of changes driven solely by the cell line protein level.
+
+# Violin plots
+<hr style="border:1px solid gray">
 
 ```{r vioplots, message=FALSE, results="asis", fig.width=11, warning=FALSE}
 library(vioplot)
@@ -27,6 +37,8 @@ cat("Violin plot of post-normalized data  \n")
 vioplot(mat)
 ```
 
+# PCA
+<hr style="border:1px solid gray">
 
 ```{r pca1, message=FALSE, results="asis", fig.height=9,warning=FALSE, fig.show="hold", out.width="50%", fig.asp=0.6}
 library(PCAtools)
@@ -70,10 +82,12 @@ biplot(p2,
 
 ```{r pca2, message=FALSE, results="asis", warning=FALSE, fig.show="hold", out.width="50%", fig.asp=0.6}
 screeplot(p1,axisLabSize = 8)
-screeplot(p2)
+screeplot(p2,axisLabSize = 8)
 
 ```
 
+# Global heatmap after normalization
+<hr style="border:1px solid gray">
 
 ```{r heatmaps, message=FALSE, results="asis", fig.width=11, fig.height=7}
 pheatmap::pheatmap(mat,
@@ -81,7 +95,7 @@ pheatmap::pheatmap(mat,
                    annotation_colors = annot_colors,
                    annotation_names_col = FALSE,
                    show_rownames = FALSE,
-                   main = "Global heatmap of post-normalized data")
+                   col=colorRampPalette(c("blue","white","red"))(100))
 
 ```
 

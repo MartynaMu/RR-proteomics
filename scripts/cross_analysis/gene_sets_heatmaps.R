@@ -64,5 +64,19 @@ terms.hm(mean.matrix = gr.means, term.descr = term.desc, orderGroupWise = FALSE,
 # Parse GMT file for KEGG pancreatic cancer hallmark genes
 
 #temp <- read.gmt(gmtfile = "data/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt") # this one doesn't work for now
-panc <- clusterProfiler::read.gmt.wp(gmtfile = "data/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
+panc.canc <- clusterProfiler::read.gmt.wp(gmtfile = "data/GMTs/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
 
+files <- list.files("data/GMTs/", 
+                    full.names = TRUE,
+                    pattern = "VANGURP")
+
+norm.panc <- lapply(files,clusterProfiler::read.gmt.wp)
+norm.panc <- data.table::rbindlist(norm.panc)
+
+pheatmap::pheatmap(gr.means %>% filter(rownames(gr.means) %in% panc.canc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(5,10,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))

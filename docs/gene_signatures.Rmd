@@ -1,0 +1,159 @@
+---
+title: "Pancreatic-cells-associated gene signatures"
+subtitle: "-normal tissue and cancer-related gene sets"
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: yeti
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 12, message=FALSE, warning=FALSE)
+knitr::opts_knit$set(root.dir ="C:/Users/Windows/Documents/R_projects/RR_proteomics")
+options(knitr.duplicate.label = "allow")
+load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
+# rmarkdown::render(input="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_plots.Rmd", output_file="C:/Users/Windows/Documents/R_projects/RR_proteomics/docs/hm_WP.html")
+library(tidyverse)
+library(rmarkdown)
+library(pheatmap)
+library(ggpubr)
+```
+
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
+}
+```
+
+# Normal pancreatic tissue gene signature - alpha, beta, delta and gamma cells
+<hr style="border:1px solid gray">
+
+```{r message=FALSE, results="asis", fig.height=7}
+cat("  \n## {.tabset}  \n")
+cat("  \n### Means cell line-wise  \n")
+files <- list.files("data/GMTs/", 
+                    full.names = TRUE,
+                    pattern = "VANGURP")
+
+norm.panc <- lapply(files,clusterProfiler::read.gmt.wp)
+norm.panc <- data.table::rbindlist(norm.panc)
+
+plot <- pheatmap::pheatmap(gr.means %>% filter(rownames(gr.means) %in% norm.panc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(5,10,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Normal pancreatic tissue gene signature (38/281)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom = "MSigDB: M45029, M45030, M45032, M45031")
+cat("  \n")
+cat("  \n### Means exp.group-wise  \n")
+order <- colnames(gr.means) %>% str_replace_all(pattern = "MIAPACA|PANC|CFPAC", replacement = "") %>% unique()
+order[1] <- str_c(order[1],"$")
+
+temp <- c()
+for (i in order) {
+  temp <- c(temp, str_which(colnames(gr.means), pattern = i))
+}
+reor.gr.means <- relocate(gr.means, all_of(temp))
+
+plot <- pheatmap::pheatmap(reor.gr.means %>% filter(rownames(reor.gr.means) %in% norm.panc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(5,10,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Normal pancreatic tissue gene signature (38/281)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom = "MSigDB: M45029, M45030, M45032, M45031")
+cat("  \n")
+cat("  \n### Log2FC  \n")
+plot <- pheatmap::pheatmap(FC %>% filter(rownames(FC) %in% norm.panc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(5,10,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Normal pancreatic tissue gene signature (38/281)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom = "MSigDB: M45029, M45030, M45032, M45031")
+cat("  \n")
+
+```
+
+# Pancreatic cancer gene signature
+<hr style="border:1px solid gray">
+
+```{r message=FALSE, results="asis", fig.height=7}
+cat("  \n## {.tabset}  \n")
+cat("  \n### Means cell line-wise  \n")
+panc.canc <- clusterProfiler::read.gmt.wp(gmtfile = "data/GMTs/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
+plot <- pheatmap::pheatmap(gr.means %>% filter(rownames(gr.means) %in% panc.canc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(5,10,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Pancreatic cancer gene signature (18/70)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom="MSigDB: M9726 - KEGG_PANCREATIC_CANCER")
+cat("  \n")
+cat("  \n### Means exp.group-wise  \n")
+plot <- pheatmap::pheatmap(reor.gr.means %>% filter(rownames(reor.gr.means) %in% panc.canc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(3,6,9,12,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Pancreatic cancer gene signature (18/70)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom="MSigDB: M9726 - KEGG_PANCREATIC_CANCER")
+cat("  \n")
+cat("  \n### Log2FC  \n")
+plot <- pheatmap::pheatmap(FC %>% filter(rownames(FC) %in% panc.canc$gene),
+                   cluster_cols = FALSE,
+                   gaps_col = c(3,6,9,12,15),
+                   cluster_rows = TRUE,
+                   angle_col = 45,
+                   border_color = "black",
+                   main="",
+                   silent=TRUE,
+                   col=colorRampPalette(c("cornflowerblue","white","red"))(100))
+annotate_figure(plot$gtable, 
+                fig.lab="Pancreatic cancer gene signature (18/70)", 
+                fig.lab.size = 15, 
+                fig.lab.pos = "top.left",
+                bottom="MSigDB: M9726 - KEGG_PANCREATIC_CANCER")
+cat("  \n")
+
+```
+
+
+

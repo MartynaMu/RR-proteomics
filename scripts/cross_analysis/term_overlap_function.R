@@ -132,7 +132,7 @@ term.overlap <- function(coefs, cell.line, ontology = "BP|CC|MF|KEGG|WP") {
   return(full.overlap)
 }
 
-full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "WP")
+full.overlap <- term.overlap(coefs = coefs, cell.line = cell.line, ontology = "KEGG")
 
 # Retrieve overlaps of GO and convert to descriptions ------------------------------
 # Assign whether terms are upreg or downreg

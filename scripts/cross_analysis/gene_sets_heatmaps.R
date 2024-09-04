@@ -3,8 +3,8 @@ library(clusterProfiler)
 
 # Retrieve gene symbols from overlapping terms -------------------------------
 # 1. prepare a list of pathways enriched in at least 2 cell lines
-overlap.wp <- unlist(full.overlap.terms) %>% unique()
-#overlap.kegg <- unlist(full.overlap.terms) %>% unique()
+#overlap.wp <- unlist(full.overlap.terms) %>% unique()
+overlap.kegg <- unlist(full.overlap.terms) %>% unique()
 #overlap.bp <- unlist(full.overlap.terms) %>% unique()
 #overlap.cc <- unlist(full.overlap.terms) %>% unique()
 #overlap.mf <- unlist(full.overlap.terms) %>% unique()
@@ -12,15 +12,15 @@ overlap.wp <- unlist(full.overlap.terms) %>% unique()
 # 2. Find each pathway in gsea objects and retrieve info from the pathway
 term.desc <- data.frame(matrix(ncol=3,nrow=1))
 colnames(term.desc) <- c("ID", "Description", "core_enrichment")
-for (i in wp_list) {
-  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.wp) %>% dplyr::select(ID, Description, core_enrichment))
+for (i in kegg_list) {
+  term.desc <- bind_rows(term.desc, i@result %>% filter(ID %in% overlap.kegg) %>% dplyr::select(ID, Description, core_enrichment))
 }
 term.desc <- term.desc %>% group_by(ID, Description) %>% summarise(Genes = str_flatten(pull(across(core_enrichment)),collapse = "/"))
 term.desc <- term.desc %>% rowwise() %>% mutate(Genes = str_split(Genes, pattern = "/") |> map(unique))
-term.desc <- drop_na(term.desc)
+term.desc.kegg <- drop_na(term.desc)
 
 #run in case of GO gsea
-term.desc <- term.desc %>% mutate(ID = str_sub(ID,start=4))
+term.desc.mf <- term.desc %>% mutate(ID = str_sub(ID,start=4))
 
 # Prepare a matrix of FC and p-values from each comparison in each cell line ------------
 args <- c(number = nrow(mat), resort.by = "logFC")

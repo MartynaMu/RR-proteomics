@@ -1,34 +1,44 @@
 ---
 title: "Untitled"
-author: "Martyna Muszczek"
-date: "`r Sys.Date()`"
-output: html_document
 ---
 
-```{r, include=FALSE}
-library(knitr)
-opts_knit$set(progress = FALSE, verbose = FALSE)
-opts_chunk$set(warning=FALSE, message=FALSE, echo=FALSE)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 11, warning=FALSE, message=FALSE, echo=FALSE)
+knitr::opts_knit$set(verbose = FALSE, progress = FALSE)
 options(knitr.duplicate.label = "allow")
-library(ggplot2)
+library(tidyverse)
+library(pheatmap)
+library(knitr)
 ```
 
+```{r s1, results='asis'}
+.pl1 <- pheatmap(mtcars[1:5,], silent=TRUE)
+.pl2 <- pheatmap(mtcars[5:15,], silent=TRUE)
+.pl3 <- pheatmap(mtcars[15:30,], silent=TRUE)
 
-```{r results="asis"}
-.pl1 <- boxplot(iris)
+height = 2
+# cat(knitr::knit(text = knitr::knit_child(text=sprintf("\n\n```{r s2, results='asis', fig.height={{height}}}'\n\n## {.tabset} \n\n### Tab1 \n\n' \n .p2 \n\n```\n" ))))
 
-.pl2 <- boxplot(iris[2])
-height = 4
-desc = "sth"
-cat(knit(text = knit_expand(
-  text =
-      sprintf(
-        "```{r, fig.height=%s}\n%s\n%s%s .pl1 %s .pl2\n",
-        height,
-        desc,
-        cat('  \n## {.tabset}  \n'),
-        cat('  \n### Means cell line-wise  \n'),
-        cat(" \n### Means exp.group-wise  \n"))
+cat(knitr::knit_child(text = c(
+"## {.tabset}",
+"",
+"### Means cell line-wise",
+"",
+"```{r, fig.height=2}",
+".pl1",
+"```",
+"",
+"### Means exp.group-wise",
+"",
+"```{r, fig.height=5}",
+".pl2",
+"```",
+"",
+"### Log2FC",
+"",
+"```{r, fig.height=10}",
+".pl3",
+"```"
 )))
-```
 
+```

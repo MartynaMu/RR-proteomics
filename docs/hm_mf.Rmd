@@ -1,29 +1,38 @@
-# Evaluate min and max of term lengths
-temp <- data.frame(matrix(ncol=1))
-colnames(temp) <- "Length"
-all.lists <- list(bp_list, cc_list, mf_list, wp_list)
+---
+title: "GSEA-enriched Molecular Function GOsim terms"
+subtitle: "- overlap in at least 2/3 cell lines"
+author: "Martyna Muszczek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: yeti
+    toc: true
+    toc_float: 
+      collapsed: false
+    toc_depth: 2
+---
 
-for (i in all.lists) {
-  for (e in 1:18) {
-    curr <- i[[e]]@result 
-    curr <- curr %>% rowwise() %>% mutate(core_enrichment= str_split(core_enrichment, pattern = "/") |> map(unique))
-    curr <- curr %>% rowwise() %>% transmute(Length=length(core_enrichment))
-    temp <- rbind(temp,curr)
-  }
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 11, warning=FALSE, message=FALSE, echo=FALSE)
+knitr::opts_knit$set(verbose = FALSE, progress = FALSE)
+options(knitr.duplicate.label = "allow")
+load("C:/Users/Windows/Documents/R_projects/RR_proteomics/.RData")
+library(tidyverse)
+library(pheatmap)
+library(knitr)
+```
+
+```{css, echo=FALSE}
+h1 {
+font-size: 25px;
 }
-temp <- drop_na(temp)
-temp %>% ggplot(aes(x=Length))+ geom_histogram()
-min(temp$Length)
-max(temp$Length)
-temp1 <- data.frame(A=1:83, B=sample.int(83,size = 83))
-pheatmap::pheatmap(temp1[1:80,], cluster_cols = FALSE, fontsize_row = 7)
+```
 
-
-
+```{r plots, results="asis"}
 
 FC.matrix = FC
 mean.matrix = gr.means
-term.descr = term.desc[1:2,]
+term.descr = term.desc.mf
 
 terms <- term.descr$ID
 
@@ -133,24 +142,30 @@ for (i in terms) {
   cat("\n\n")
   
   cat(knitr::knit_child(text = c(
-    "## {.tabset}",
-    "",
-    "### Means cell line-wise",
-    "",
-    "```{r, fig.height={{height}}}",
-    ".pl1",
-    "```",
-    "",
-    "### Means exp.group-wise",
-    "",
-    "```{r, fig.height={{height}}}",
-    ".pl2",
-    "```",
-    "",
-    "### Log2FC",
-    "",
-    "```{r, fig.height={{height}}}",
-    ".pl3",
-    "```"
-  )))
+  "## {.tabset}",
+  "",
+  "### Means cell line-wise",
+  "",
+  "```{r, fig.height={{height}}}",
+  ".pl1",
+  "```",
+  "",
+  "### Means exp.group-wise",
+  "",
+  "```{r, fig.height={{height}}}",
+  ".pl2",
+  "```",
+  "",
+  "### Log2FC",
+  "",
+  "```{r, fig.height={{height}}}",
+  ".pl3",
+  "```"
+)))
   
+}  
+
+ 
+```
+
+

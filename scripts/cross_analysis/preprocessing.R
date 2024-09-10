@@ -5,6 +5,8 @@ df <- df[1:49]
 # Tidy gene names-----------------------------------------------
 df$Genes <- str_replace_all(df$Genes, "_HUMAN", replacement = "")
 df <- column_to_rownames(df, var = "Genes")
+df[df==0] <- NA
+df <- drop_na(df)
 
 # Normalization ---------------------------------------------------
 #qnorm <- limma::normalizeQuantiles(as.matrix(df))
@@ -70,32 +72,4 @@ pheatmap::pheatmap(mat,
                    annotation_names_col = FALSE,
                    show_rownames = FALSE,
                    main = "Global heatmap, medians normalized, means subtracted")
-
-# PCA -----------------------------------------------------------------
-library(PCAtools)
-p <- pca(drop_na(df), metadata = annot_col, scale = TRUE) # pre norm
-p <- pca(mat, metadata = annot_col, scale = TRUE) # post norm
-
-png("figures/allruns/final_quant/pca-post-norm.png")
-biplot(p, 
-       x = "PC1",
-       y = "PC2",
-       lab = NULL, 
-       # labSize = 5, 
-       shape = "Condition.L3",
-       shapekey = c("CFPAC" = 15, "MiaPaca" = 17, "PANC1" = 8),
-       showLoadings = FALSE,
-       boxedLoadingsNames = FALSE, 
-       colby = "Condition.L1",
-       colkey = annot_colors$Condition.L1,
-       title = "Post-norm",
-       # encircle = TRUE,
-       legendPosition = "right",
-       hline = 0, 
-       vline = 0)
-dev.off()
-
-screeplot(p)
-
-plotloadings(p)
 

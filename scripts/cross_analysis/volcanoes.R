@@ -39,7 +39,7 @@ names(coefs) <- colnames(fit_bayes$contrasts)
 
 max.x <- 7
 min.x <- -5.5
-max.y <- 19.5
+max.y <- 19
 
 ## loop -----------------------------------------------------------------------
 for (i in coefs) {

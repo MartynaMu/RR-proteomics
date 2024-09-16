@@ -3,13 +3,15 @@
 library(tidyverse)
 library(ggpubr)
 
-mat.long <- mat %>% rownames_to_column("Gene") %>%
+ds = df
+
+ds.long <- ds %>% rownames_to_column("Gene") %>%
   pivot_longer(2:49,
     names_to = c("Line", "Sample"),
     values_to = "Intensity",
     names_sep = "(?<=PANC|MIAPACA|CFPAC)\\_")
 
-mat.long <- mat.long %>% separate(col = "Sample", into = c("Group", "Rep"), sep = "_(?=[[:digit:]])")
+ds.long <- ds.long %>% separate(col = "Sample", into = c("Group", "Rep"), sep = "_(?=[[:digit:]])")
 
 boxplot.comp <- list(c("2D", "3D_YOUNG"),
                      c("3D_YOUNG", "3D_OLD"),
@@ -20,8 +22,8 @@ boxplot.comp <- list(c("2D", "3D_YOUNG"),
                      c("2D", "2D_XENO"),
                      c("2D", "3D_XENO"))
 
-curr.gene = "PODXL"
-p <- mat.long %>% 
+curr.gene = "AKT1"
+p <- ds.long %>% 
   filter(Gene == curr.gene) %>% 
   ggline("Group", 
      "Intensity", 

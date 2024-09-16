@@ -1,9 +1,11 @@
 # PCA -----------------------------------------------------------------
 library(PCAtools)
-pca <- pca(drop_na(df), metadata = annot_col, scale = TRUE) # pre norm
-pca <- pca(mat, metadata = annot_col, scale = TRUE) # post norm
 
-biplot(pca, 
+ds = zscored
+is.norm = "Medians-centered-cell-lines-zscored"
+pca <- pca(drop_na(ds), metadata = annot_col, scale = TRUE)
+
+p <- biplot(pca, 
        x = "PC1",
        y = "PC2",
        lab = NULL,
@@ -13,16 +15,21 @@ biplot(pca,
        boxedLoadingsNames = FALSE, 
        colby = "Condition.L1",
        colkey = annot_colors$Condition.L1,
-       title = "Post-norm",
+       title = is.norm,
        # encircle = TRUE,
        legendPosition = "right",
        hline = 0, 
        vline = 0)
+filename = paste0("pca-", is.norm, ".png")
+ggsave(p, filename=filename, path = "figures/allruns/final_quant/normalization/", width = 7, height = 5.5, dpi=100, scale=1, bg = "white")
 
-screeplot(pca)
+screeplot <- screeplot(pca, title = is.norm, axisLabSize = 10)
+filename = paste0("screeplot-", is.norm, ".png")
+ggsave(screeplot, filename=filename, path = "figures/allruns/final_quant/normalization/", width = 7, height = 5, dpi=100, scale=1, bg = "white")
 
-loadings <- plotloadings(pca, rangeRetain = 0.01,title = "Post-norm",labSize = 3)
-ggsave(loadings, filename="figures/allruns/final_quant/loadingstop1.png", width = 8,height = 8, dpi=100, scale=1, bg = "white")
+loadings <- plotloadings(pca, rangeRetain = 0.01, title = is.norm, labSize = 3)
+filename = paste0("top1loadings-",is.norm,".png")
+ggsave(loadings, filename=filename, path = "figures/allruns/final_quant/normalization/", width = 9, height = 12, dpi=100, scale=1, bg = "white")
 
 
 pairsplot <- pairsplot(pca,

@@ -89,7 +89,9 @@ compute_gsea <- function(fit, path, GO = c("BP|CC|MF"), coefs) {
 return(gsea_list)
 }
 
-mf_list <- compute_gsea(fit = fit_bayes, path = "figures/allruns/final_quant/", GO = "MF", coefs = coefs)
+bp_list <- compute_gsea(fit = fit_bayes, path = "figures/cross-analysis/", GO = "BP", coefs = coefs)
+mf_list <- compute_gsea(fit = fit_bayes, path = "figures/cross-analysis/", GO = "MF", coefs = coefs)
+cc_list <- compute_gsea(fit = fit_bayes, path = "figures/cross-analysis/", GO = "CC", coefs = coefs)
 
 ## KEGG GSEA-------------------------------------------------------------------
 compute_keggsea <- function(fit, path, coefs) {
@@ -110,7 +112,7 @@ compute_keggsea <- function(fit, path, coefs) {
     filename_fig <- paste0("gsekegg_", "top30_", names(coefs[i]), ".png")
     
     deps <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat))
-    
+    deps <- drop_na(deps)
     entrezid <- bitr(as.character(deps[,1]), fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
     geneList <- filter(deps, ID %in% entrezid$SYMBOL)[,2] #fc
     names(geneList) <- as.character(entrezid$ENTREZID) #gene symbols
@@ -155,7 +157,7 @@ compute_keggsea <- function(fit, path, coefs) {
 return(kegg_list)
 }
 
-kegg_list <- compute_keggsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
+kegg_list <- compute_keggsea(fit = fit_bayes, path = "figures/cross-analysis/", coefs = coefs)
 
 ## WikiPathways ------------------------------------------------
 compute_WPgsea <- function(fit, path, coefs) {
@@ -176,7 +178,7 @@ compute_WPgsea <- function(fit, path, coefs) {
     filename_fig <- paste0("gseWP_", "top30_", names(coefs[i]), ".png")
     
     deps <- topTable(fit_bayes, coef = i, adjust="BH", genelist = rownames(mat), resort.by = "logFC", number = nrow(mat))
-    
+    deps <- drop_na(deps)
     entrezid <- bitr(as.character(deps[,1]), fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
     geneList <- filter(deps, ID %in% entrezid$SYMBOL)[,2] #fc
     names(geneList) <- as.character(entrezid$ENTREZID) #gene symbols
@@ -215,7 +217,7 @@ compute_WPgsea <- function(fit, path, coefs) {
 return(wp_list)
 }
 
-wp_list <- compute_WPgsea(fit = fit_bayes, path = "figures/allruns/final_quant/", coefs = coefs)
+wp_list <- compute_WPgsea(fit = fit_bayes, path = "figures/cross-analysis/", coefs = coefs)
 
 
 # Visualize all results stored in a list ----------------------------------------------

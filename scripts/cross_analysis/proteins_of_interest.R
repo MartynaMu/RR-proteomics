@@ -22,19 +22,20 @@ boxplot.comp <- list(c("2D", "3D_YOUNG"),
                      c("2D", "2D_XENO"),
                      c("2D", "3D_XENO"))
 
-curr.gene = "AKT1"
+curr.gene = "MTOR"
 p <- ds.long %>% 
   filter(Gene == curr.gene) %>% 
   ggline("Group", 
      "Intensity", 
      color = "Line",
-     add=c("mean_se","dotplot"),
+     add=c("mean_sd","dotplot"),
      title = paste0(curr.gene," expression")) |>
   ggpar(legend = "none", x.text.angle = 45) |>
   facet(facet.by = "Line", panel.labs.background = list(color="white", fill="white"))+
   stat_compare_means(method = "anova", label.y.npc = "bottom")+
   stat_compare_means(method = "t.test", comparisons = boxplot.comp, label = "p.signif")+
   font("x.text", size=8)
-ggsave(p, filename = paste0(curr.gene, ".png"), device = "png",path = "figures/allruns/final_quant", width = 8, height = 5, units = "in", scale = 1, dpi=100)
+p
+# ggsave(p, filename = paste0(curr.gene, ".png"), device = "png",path = "figures/allruns/final_quant", width = 8, height = 5, units = "in", scale = 1, dpi=100)
 p  
 

@@ -60,6 +60,9 @@ comp_gene_occ %>%
         panel.labs.background = list(color="white", fill="white"))+
   scale_y_continuous(limits=c(-45,45))+
   geom_text(aes(label=CompCount), hjust = "outward", size=3.5)+
-  font("xy.text", size = 8)
+  font("xy.text", size = 8)+
+  theme(panel.grid.major.y = element_line(color = "gray", 
+                                          linewidth = 0.2,
+                                          linetype = 2))
 
 

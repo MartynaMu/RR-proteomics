@@ -9,6 +9,7 @@ df[df==0] <- NA
 df <- drop_na(df)
 
 # Normalization ---------------------------------------------------
+# omit when processing different DIANN runs in one matrix
 #qnorm <- limma::normalizeQuantiles(as.matrix(df))
 qnorm <- limma::normalizeMedianValues(as.matrix(df))
 
